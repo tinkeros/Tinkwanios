@@ -24,7 +24,7 @@ Tinkwanios is [Aiwnios](https://github.com/nrootconauto/aiwnios) with the work
 - **TinkerOS's and TempleOS's demos**, over 200 of them, under `Demo/`,
   and `Misc/OSTestSuite.HC` to run the lot and report on each one.
 
-This fork has better TempleOS compatability, run the test suite to prove it!
+This fork has better TempleOS compatibility, run the test suite to prove it!
 
 ```
 #include "/Misc/OSTestSuite";
@@ -38,9 +38,10 @@ This fork has better TempleOS compatability, run the test suite to prove it!
 | aarch64 | Linux, FreeBSD |
 
 ## Screenshot
-<div align="center">
-    <img src="img/scrot.png" alt="Tinkwanios Screenshot" width="80%">
-</div> <!-- whoever did the <center> was retarded, thats HTML3 (!) and only applies to text -->
+<p align="center">
+  <a href="https://tinkeros.github.io">
+  <img src="https://tinkeros.github.io/Images/tinkwanios43.webp" /></a>
+</p>
 
 ## Building Tinkwanios
 
