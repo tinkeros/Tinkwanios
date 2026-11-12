@@ -26,7 +26,7 @@ Tinkwanios is [Aiwnios](https://github.com/nrootconauto/aiwnios) with the work
   See `Demo/Graphics/TinkerOS`.
 - TinkerOS's software OPL2 FM synthesizer with General MIDI instruments.
   Press `CTRL-ALT-m` to bring up the mixer and change things up if you like!
-- Include extra Apps/Emulators/Games from TinkerOS
+- Includes extra Apps/Demos/Emulators/Games from TinkerOS
 - Includes DOOM port TOOM with glowing glowies! `/Community/Toom`
 - **TinkerOS's and TempleOS's demos**, over 200 of them, under `Demo/`,
   and `Misc/OSTestSuite.HC` to run the lot and report on each one.
