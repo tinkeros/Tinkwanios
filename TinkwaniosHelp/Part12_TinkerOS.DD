@@ -1,0 +1,63 @@
+$WW,1$$FG,5$$TX+CX,"Runtime Part 12: TinkerOS and HolyC Extensions"$$FD$
+
+  $FG,4$Nothing here replaces anything.$FD$ TinkerOS only ever $UL,1$added$UL,0$ to TempleOS, and Tinkwanios carries those additions across, so existing TempleOS source compiles and runs exactly as it always did -- the extensions are there when you reach for them and invisible when you do not. This page is the list of what you gain.
+
+$FG,5$$TX+CX,"At the command line"$$FD$
+
+  $HL,1$Cdd$HL,0$ changes directory $UL,1$and lists it$UL,0$, which is what you almost always wanted $HL,1$Cd$HL,0$ to do:
+$HL,1$
+$BG,7$Cdd("/Demo/Snd");       /* change and list        */
+Cdd;                    /* back to ~, and list it */
+Cdd("/A/B/C",TRUE);     /* make the dirs on the way */
+$BD$$HL,0$
+
+  The second argument is $HL,1$make_dirs$HL,0$.
+
+$FG,5$$TX+CX,"Bitfields that actually work"$$FD$
+
+  TempleOS always let you $UL,1$declare$UL,0$ a bitfield; what it never grew was member access that read and wrote only those bits. That is now filled in, so plain $HL,1$.$HL,0$ and $HL,1$->$HL,0$ do a masked read and a read-modify-write on just the field:
+$HL,1$
+$BG,7$class Flags { U8 a:3; U8 b:5; };
+Flags f;
+f.a=5; f.b=17;
+"a=%d b=%d\n",f.a,f.b;   /* 5 and 17, not one mangled byte */
+$BD$$HL,0$
+
+  A value too wide for the field is truncated silently, the same as C.
+
+  $FG,4$One limit worth knowing$FD$: only plain $HL,1$=$HL,0$ is special-cased. A compound assignment -- $HL,1$f.a|=1$HL,0$ or $HL,1$f.a++$HL,0$ -- falls through to the ordinary member path and operates on the $UL,1$whole storage unit$UL,0$, which is the wrong answer and is not diagnosed. Write it out as $HL,1$f.a=f.a|1$HL,0$ until that is fixed. TinkerOS behaves the same way.
+
+  See $HL,1$/Demo/Bitfield.HC$HL,0$.
+
+$FG,5$$TX+CX,"firstsize"$$FD$
+
+  TempleOS had $HL,1$lastclass$HL,0$, a compile-time default argument resolving to the type $UL,1$name$UL,0$ of the preceding argument. TinkerOS added $HL,1$firstsize$HL,0$, which resolves to $HL,1$sizeof()$HL,0$ the $UL,1$first$UL,0$ argument's class. That is what lets the array helpers work out the element size themselves:
+$HL,1$
+$BG,7$public U0 ZeroClass(U8 *ptr,I64 s_elem=firstsize);
+public U0 ClassCpy(U8 *dst,U8 *src,I64 n_elem=1,I64 s_elem=firstsize);
+public Bool ArrayCAlloc(U8 **ptr,I64 n_elem,I64 s_elem=firstsize);
+$BD$$HL,0$
+
+  So $HL,1$ZeroClass(&my_struct)$HL,0$ zeroes the right number of bytes without you naming the type twice. $HL,1$ArrayZero$HL,0$, $HL,1$ArrayMAlloc$HL,0$, $HL,1$ArrayReAlloc$HL,0$, $HL,1$ArraySize$HL,0$ and $HL,1$ReAlloc$HL,0$ all take it too. See $HL,1$/Demo/FirstSize.HC$HL,0$ and $HL,1$/Demo/LastClass.HC$HL,0$.
+
+$FG,5$$TX+CX,"Partial array initializers"$$FD$
+
+  You can write a short initializer list for a longer array, as in C:
+$HL,1$
+$BG,7$I64 arr[5]={1,2};
+$BD$$HL,0$
+
+  $FG,4$Unlike C, the tail is not zero-filled$FD$ -- it is left undefined, and you get a warning saying so. If you need zeros, ask for them.
+
+$FG,5$$TX+CX,"Where to look next"$$FD$
+
+  Click a directory to open it in a new window:
+
+$ID,2$
+$MA-X+PU,"::/Demo/Graphics/TinkerOS",LM="User(\"Cdd(\\\"::/Demo/Graphics/TinkerOS\\\");\n\");"$ -- the extended palette and dithering
+$ID,-2$
+$ID,2$
+$MA-X+PU,"::/Demo/Snd",LM="User(\"Cdd(\\\"::/Demo/Snd\\\");\n\");"$ -- the sound stack
+$ID,-2$
+
+  And two files worth reading: $LK,"::/Demo/Compiler/RmParens.HC",A="FI:::/Demo/Compiler/RmParens.HC"$, the redundant-parenthesis sweeper, and $LK,"::/Misc/OSTestSuite.HC",A="FI:::/Misc/OSTestSuite.HC"$ if you want to watch the whole system exercise itself.

@@ -1,0 +1,106 @@
+$WW,1$$FG,5$$TX+CX,"Runtime Part 2: Making Noises"$$FD$
+
+  TempleOS makes sounds that will bring you back to the days of Atari games. The simplest way to make a tone is $HL,1$Snd(23);$HL,0$(This higher the number the higher the pitch). $FG,4$Call "Snd;" to cancel the sound$FD$.
+
+  If you want to go the extra mile and make a bodacious explosioon sound,use  $HL,1$Noise(milliseconds,min_pitch,max_pitch);$HL,0$. Or if you want a jumping sound,use $HL,1$Sweep$HL,0$.
+
+$HL,1$
+$BG,7$Sweep(500,20,70); /* sploosh sound for 500 milliseconds */
+Noise(500,20,70); /* Explosion sound */
+$BD$$HL,0$
+
+
+$FG,5$$TX+CX,"Runtime Part 2.5: Making Music"$$FD$
+
+  TempleOS let's you make some epic jams. To do this,we use the $HL,1$Music$HL,0$
+
+A simple song looks like this:
+$HL,1$
+$BG,7$ Play("wChDqEeFwGwAwB");
+$BD$$HL,0$
+
+  There are special charactors that change the duration/properties of the notes,so without further ado,here is a list
+$TR-C,"#"$
+$ID,2$
+Make a note sharp($UL,1$comes after the note$UL,0$)
+$ID,-2$
+$TR-C,"w"$
+$ID,2$
+When before a note,it makes it a whole note
+$ID,-2$
+$TR-C,"h"$
+$ID,2$
+Makes a half note
+$ID,-2$
+$TR-C,"q"$
+$ID,2$
+Makes a 1/4 note
+$ID,-2$
+$TR-C,"e"$
+$ID,2$
+Makes a tiny eigth note
+$ID,-2$
+
+  You can change the tempo of the music via the global vairable $HL,1$music.tempo$HL,0$(Be sure to reset the music's settings via $HL,1$MusicSettingsRst$HL,0$)
+
+Try this:
+
+$HL,1$
+$BG,7$music.tempo=8;
+Play(
+    "hEhEwEhChEwGqG"
+    "wCqGqEqAqBqA#qAqGhEhGwAhFhGwEhChDqB"
+   "wCqGqEqAqBqA#qAqGhEhGwAhFhGwEhChDqB"
+     "hGhF#hFhD#wEqG#qAhCqAhChD"
+    "hGhF#hFhD#wE.wC.wC.wC"
+    "hGhF#hFhD#wEqG#qAhCqAhChDwD#wDwC"
+    "hGhF#hFhD#wEqG#qAhCqAhChD"
+    "hGhF#hFhD#wE.wC.wC.wC"
+    "hGhF#hFhD#wEqG#qAhCqAhChDwD#wDwC"
+);
+MusicSettingsRst;
+$BD$$HL,0$
+
+
+$FG,5$$TX+CX,"TinkerOS Extensions"$$FD$
+
+  TempleOS had one voice and a beeper. TinkerOS grew a whole sound stack, and Tinkwanios carries it: an 8-channel mixer, an OPL2 FM synthesizer, speech, WAV and MP3 playback, and a reverb send. $FG,4$It is loaded for you at boot$FD$ by $HL,1$~/HomeKeyPlugIns.HC$HL,0$, so everything below works from a fresh prompt.
+
+  The best part is that $UL,1$none of the code above had to change$UL,0$. Every $HL,1$Snd$HL,0$, $HL,1$Noise$HL,0$, $HL,1$Sweep$HL,0$ and $HL,1$Play$HL,0$ on this page now goes through FM synthesis instead of the one-voice oscillator, because the stack attaches through a function pointer the old code already consulted.
+
+$FG,2$$TX,"The mixer: <CTRL-ALT-M>"$$FD$
+
+  $FG,4$Press <CTRL-ALT-M>$FD$ and the mixer GUI opens. You get a $HL,1$Master$HL,0$ fader, one fader per active source (Tones, OPL2, Wav, TTS, MP3...), a horizontal $HL,1$Reverb$HL,0$ send and an $HL,1$Output$HL,0$ fader for the host volume.
+
+  Beside the faders are test links, so you can hear a change while you make it -- $HL,1$Beep$HL,0$, $HL,1$PickInst$HL,0$ to choose an FM instrument, and links that speak a line, play a WAV and play an MP3.
+
+  $FG,4$Mouse ctrls are polled once a frame$FD$, so click deliberately; a press and release in the same instant can fall between two polls and be missed.
+
+$FG,2$$TX,"Making noise from code"$$FD$
+
+  Each of these takes $HL,1$bkg$HL,0$ -- TRUE returns immediately, FALSE waits until it finishes -- and each has a matching stop:
+$HL,1$
+$BG,7$Speak("Hello from Tink Wan Eye Os");  /* TMS5220Stop; to cut it off  */
+WavPlay("/Demo/Snd/LRTest.wav");       /* WavStop;                     */
+MP3Play("/Demo/Snd/Work4God.mp3");     /* MP3Stop;                     */
+Beep;
+$BD$$HL,0$
+
+  $HL,1$Speak(text,bkg)$HL,0$ is an emulated Speak and Spell chip, so spell words the way they sound rather than the way they are written -- that is why the mixer says $HL,1$"Tink Wan Eye Os"$HL,0$.
+
+  $HL,1$MP3Play(filename,bkg,verbose)$HL,0$ takes a third argument; pass FALSE for verbose unless you want the decoder chattering at your terminal.
+
+  $HL,1$PickInst;$HL,0$ changes the default system sound. It opens the instrument picker -- the same popup the mixer's $HL,1$PickInst$HL,0$ link uses -- and whichever standard instrument you choose is what every tone uses from then on, so your beeps and music come out in that voice. The instrument number comes back as the return value. $HL,1$PickInstLoop$HL,0$ keeps reopening the picker so you can audition several in a row, and $HL,1$SetInstNum(num)$HL,0$ sets one straight away if you already know the number.
+
+$FG,2$$TX,"Mixer controls"$$FD$
+
+  Everything the GUI does is a function you can call:
+$HL,1$
+$BG,7$MixerSetReverb(0.35);   /* 0.0 dry .. 1.0 wet */
+MixerGetReverb;
+snd_vol=0.5;            /* master, 0.0 .. 1.0 */
+$BD$$HL,0$
+
+  Per-source faders go through an index rather than a name: $HL,1$MixerSetVol(idx,vol)$HL,0$ and $HL,1$MixerGetVol(idx)$HL,0$, where the index is what $HL,1$MixerRegister$HL,0$ handed back when the source attached.
+
+  If you would rather not load the players, $HL,1$#include "/Demo/Snd/SndStack";$HL,0$ gives you the device, mixer and OPL2 alone; $HL,1$/Demo/Snd/SndAll$HL,0$ is that plus Wav, TTS and MP3. Load it from the task you want to keep the mixer in -- the GUI spawns as a child of whoever loaded it, and compiles its test links against that task's symbols.

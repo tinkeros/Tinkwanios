@@ -1,0 +1,146 @@
+$WW,1$$FG,14$$TX+CX,"ThinkPad T4xx"$$FG$
+
+$TX+CX,"The embedded controller demos in this folder, and what else"$
+$TX+CX,"of a T420, T430 or T440p works in TinkerOS."$
+
+$FG,10$The EC demos in this folder$FG$
+
+$TX+CX,"Tried on a T420 and a T430.  Nothing else."$
+
+These talk to the Lenovo ThinkPad embedded controller through the
+ACPI EC ports: the battery pack's own registers, the fan tachometer
+and level, and the thermal sensors.
+
+$FG,4$The EC offsets used here are the ones Lenovo's firmware uses on
+the T420 and the T430, and those are the only two machines any of
+this has been run on.$FG$  A different ThinkPad, another vendor's
+laptop, or a desktop will read whatever happens to sit at those
+offsets, so expect nonsense rather than numbers.  Reading the EC is
+harmless anywhere; writing to it at a guessed offset is not, which
+is why the fan control paths all go through one gate you can shut
+off (see the end of this file).
+
+$FG,10$Files$FG$
+
+  EC.HC       ACPI table search, EC ports out of the ECDT, and the
+              locked read/write primitives.  The others include it.
+  Battery.HC  Smart Battery state through the EC's page window.
+  Fan.HC      Fan RPM, level, thermal sensors, fan control.
+  FanGui.HC   A fan fader with live temperatures.
+
+$FG,10$Usage$FG$
+
+  Include the one you want; it pulls in what it needs.
+
+$FG,2$Battery$FG$
+
+  #include "::/Demo/Lenovo/T4xx/Battery"
+
+  BatRep;          Charge, rate, voltage, status, design figures and
+                   the pack's name, for both slots.
+  BatRep(TRUE);    The same, plus the ACPI tables behind it.
+  BatPct;          BAT0 percent, -1 if there is no answer.
+  BatWatch;        BAT0 once a second.  Any key stops it.
+  BatTblRep;       Which ACPI tables declare battery devices.
+
+$FG,2$Fan and temperatures$FG$
+
+  #include "::/Demo/Lenovo/T4xx/Fan"
+
+  FanRep;          RPM, level and every live sensor.  The everyday one.
+  FanWatch;        The same, live.  Any key stops it.
+  TempRep;         Sensors only.  Sensor 0 is the CPU.
+  FanSetLevel(4);  Manual level 0-7.  Level 0 stops the fan, and what
+                   happens next is then your problem.
+  FanSetFullSpeed; Off the governor, all the way up.  Loud, never unsafe.
+  FanSetAuto;      Hand the fan back to the firmware.  Always safe.
+  FanCurve;        Software governor on the hottest sensor.  Any key
+                   stops it, and it returns the fan to auto by itself
+                   if a sensor disappears, a write fails, or anything
+                   crosses the panic temperature.
+
+$FG,2$The GUI$FG$
+
+  #include "::/Demo/Lenovo/T4xx/FanGui"
+
+  FanTempGui;      Fan fader plus live temperatures and a bar per
+                   sensor.  Drag the fader to take manual control,
+                   $FG,11$A$FG$ for auto, $FG,11$F$FG$ for full speed, $FG,11$ESC$FG$ to close.  It
+                   backs off to auto on its own if it gets hot.
+
+$FG,2$Poking at the EC by hand$FG$
+
+  When the numbers above look wrong for your machine, this is where
+  you start:
+
+  #include "::/Demo/Lenovo/T4xx/EC"
+
+  EcDump;          Hex dump of the 256 byte EC address space.
+  EcSnap;          Remember it, then change something (unplug the
+  EcDiff;          charger, let the fan spin up) and see what moved.
+  EcPctCandidates; Offsets holding a plausible percentage.
+
+$FG,10$Turning the writes off$FG$
+
+  Every path that writes to the EC goes through FanCtrlOk, gated on
+  FAN_ALLOW_CONTROL in Fan.HC.  It ships as 1.  Set it to 0 and the
+  fan calls refuse, the reports still work, and FanTempGui comes up
+  display only with a red line saying so.  Do that first on any
+  machine that is not a T420 or a T430.
+
+$FG,14$$TX+CX,"Other T4xx hardware"$$FG$
+
+  These live elsewhere in the tree and ship with the distro; they
+  are listed here because this is where the T4xx notes are.
+
+$FG,10$Webcam -- T430 and T440p$FG$
+
+  The built-in camera works on the T430 (Chicony) and the T440p
+  (Bison), over the UVC driver.  Pictures save as .GR files.
+
+  #include "::/Apps/WebCam/WebCam"
+
+  WebCam;              320x240 live window.  Space takes a picture,
+                       S or Enter saves it to ~/Pictures/CamNNN.GR,
+                       ESC quits.
+  WebCam(640,480);     VGA.  WebCam(1280,720); is 720p over MJPEG.
+  CamStream;           Half size, lower right corner, stays on top
+                       and never takes the keyboard.  CamStreamStop;
+                       closes it.
+  CamSnap;             One 640x480 picture, no window, saved and the
+                       name returned.
+  CamRep;              The camera's formats, sizes and frame rates.
+  CamDiag;             Stream for three seconds and report what
+                       arrived.  Start here when nothing shows up.
+
+  ::/Apps/WebCam/Help.DD has the rest.
+
+$FG,10$Ethernet -- T420, T430 and T440p$FG$
+
+  The built-in wired NIC works on all three: the 82579LM of the T420
+  and T430, and the I217-LM of the T440p, both on the E1000E driver.
+  Wireless is not supported on any of them.
+
+  #include "::/Demo/Net/Start"
+
+  That finds the card, loads its driver and runs NetCfg for a DHCP
+  lease; it says whether it got one and prints NetRep.  Afterwards:
+
+  NetRep;              The UDP, TCP, DNS, ARP and IPv4 state,
+                       the address it was given included.
+  NetCfg;              Ask for a lease again.
+  Ping("1.1.1.1");     Or a hostname, which also exercises DNS.
+
+  Then the programs in /Demo/Net/Programs (FTP, telnet, gopher,
+  chat).  Plug the cable in before you include Start, and if
+  something drops to Dbg, G2; carries on.
+
+$FG,10$USB -- T420, T430 and T440p$FG$
+
+  All three machines' EHCI ports work, and so do the xHCI ports of
+  the T440p: keyboards, mice, serial adapters, webcams, and sticks,
+  which mount by themselves when you plug them in (the top bar says
+  +USB DRV and its drive letter).
+
+  UsbRep;              Host controllers and everything attached,
+                       with the kind of each device.

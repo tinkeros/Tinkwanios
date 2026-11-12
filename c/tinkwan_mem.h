@@ -1,0 +1,98 @@
+#pragma once
+#include "tinkwan_multic.h"
+#include "tinkwan_que.h"
+#include <setjmp.h>
+#include <stdint.h>
+typedef struct CTask {
+  void *pad;
+  int64_t task_signature;
+  struct CQue *except; // CExcept
+  int64_t except_ch;
+  int64_t catch_except;
+  struct CHashTable *hash_table;
+  void *stack;
+  char ctx[2048];
+  jmp_buf throw_pad;
+  struct CHeapCtrl *heap, *code_heap;
+} CTask;
+
+struct CHashTable;
+struct CMemUnused;
+#define HClF_LOCKED        1
+#define MEM_HEAP_HASH_SIZE 1024
+#define MEM_PAG_BITS       (12)
+#define MEM_PAG_SIZE       (1 << MEM_PAG_BITS)
+typedef struct CHeapCtrlArena {
+  struct CMemUnused *heap_hash[5];
+  struct CMemUnused *used_next, *used_last;
+  struct CMemUnused *malloc_free_lst;
+} CHeapCtrlArena;
+typedef struct CBuddyPair {
+  int64_t offset_l, offset_r;
+  struct CBuddyPair *left, *right;
+  char occupied, partial;
+} CBuddyPair;
+typedef struct CHeapCtrl {
+  void *pad; // Needed
+  int32_t hc_signature;
+  int32_t is_code_heap;
+  int64_t locked_flags, alloced_u8s, used_u8s;
+  struct CTask *mem_task;
+  int64_t arena_lock;
+  CHeapCtrlArena arenas[16];
+  CQue mem_blks;
+#if defined(__OpenBSD__)
+  int code_shm_fd;
+  CBuddyPair *buddies;
+#endif
+} CHeapCtrl;
+typedef struct CMemBlk {
+  CQue base;
+  CQue base2;
+  int64_t pags;
+#if __OpenBSD__ + __NetBSD__ > 0
+  void *rx;
+  void *rw;
+  int64_t shm_pag;
+#endif
+} CMemBlk;
+typedef struct __attribute__((packed)) CMemUnused {
+  // MUST BE FIRST MEMBER
+  struct CMemUnused *next;
+  struct CMemUnused *last; // Used for used memory only
+  CHeapCtrl *hc;
+  int64_t caller1,caller2; // Used for used memory only
+  int64_t which_bucket;
+  int64_t sz; // MUST BE LAST MEMBER FOR MAllocAligned
+} CMemUnused;
+
+#define A_FREE              __TINKWANIOS_Free
+#define A_MALLOC(sz, task)  __TINKWANIOS_MAlloc(sz, task)
+#define A_CALLOC(sz, task)  __TINKWANIOS_CAlloc(sz, task)
+#define A_STRDUP(str, task) __TINKWANIOS_StrDup(str, task)
+void *__TINKWANIOS_CAlloc(int64_t cnt, void *t);
+void *__TINKWANIOS_MAlloc(int64_t cnt, void *t);
+void __TINKWANIOS_Free(void *ptr);
+char *__TINKWANIOS_StrDup(char *str, void *t);
+
+char *__TINKWANIOS_StrDup(char *str, void *t);
+void HeapCtrlDel(CHeapCtrl *ct);
+CHeapCtrl *HeapCtrlInit(CHeapCtrl *ct, CTask *task, int64_t code_heap);
+void *__TINKWANIOS_CAlloc(int64_t cnt, void *t);
+int64_t MSize(void *ptr);
+void __TINKWANIOS_Free(void *ptr);
+void *__TINKWANIOS_MAlloc(int64_t cnt, void *t);
+
+int SetWriteNP(int);
+// Returns good region if good,else NULL and after is set how many bytes OOB
+// Returns INVALID_PTR on error
+extern void *BoundsCheck(void *ptr, int64_t *after);
+int64_t IsValidPtr(char *chk);
+void InitBoundsChecker();
+extern int64_t WriteProtectMemCpy(char *dst, char *src, int64_t len);
+void *MemGetWritePtr(void *ptr);
+void *MemGetExecPtr(void *ptr);
+#if !(__OpenBSD__ + __NetBSD__ > 0)
+#  define MemGetWritePtr(x) (x)
+#  define MemGetExecPtr(x) (x)
+#endif

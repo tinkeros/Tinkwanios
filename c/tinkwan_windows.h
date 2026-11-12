@@ -1,0 +1,31 @@
+#pragma once
+#include <stdint.h>
+extern int64_t sdl_window_grab_enable;
+void DrawWindowNew();
+void UpdateScreen(char *px, int64_t w, int64_t h, int64_t wi);
+void GrPaletteColorSet(int64_t i, uint64_t bgr48);
+int64_t ScreenUpdateInProgress();
+void SetCaptureMouse(int64_t);
+void LaunchSDL(void (*boot_ptr)(void *data), void *data);
+void WaitForSDLQuit();
+void SetKBCallback(void *fptr);
+void SetMSCallback(void *fptr);
+void DeinitVideo();
+extern int64_t tinkwan_fb_width;
+extern int64_t tinkwan_fb_height;
+extern int64_t tinkwan_gr_width_scale;
+extern int64_t tinkwan_gr_height_scale;
+extern int64_t tinkwan_gr_width;
+extern int64_t tinkwan_gr_height;
+void TinkwanGrSizesSet(void);
+void PresentFB(void);
+int64_t GrWidthGet(int64_t *stk);
+int64_t GrHeightGet(int64_t *stk);
+int64_t GrWidthScaleGet(int64_t *stk);
+int64_t GrHeightScaleGet(int64_t *stk);
+int64_t GrDoScalingGet(int64_t *stk);
+int64_t FBWidthGet(int64_t *stk);
+int64_t FBHeightGet(int64_t *stk);
+int64_t FBAliasGet(int64_t *stk);
+int64_t FBPitchGet(int64_t *stk);
+int64_t SetWinMgrFlags(int64_t *stk);

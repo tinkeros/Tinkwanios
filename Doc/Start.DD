@@ -1,0 +1,5 @@
+$WW+H,1$$PURPLE$$TX+CX,"",D="DD_OS_NAME_VERSION"$$FG$
+
+$TX+CX,"Public Domain Operating System"$
+
+$LK,"Help & Index",A="FI:::/Doc/HelpIndex.DD"$, $LK,"Quick Start: Cmd line",A="FI:::/Doc/CmdLineOverview.DD"$, $BK,1$$LK,"Tinkwanios Help Guide",A="FI:::/TinkwaniosHelp/Main.DD"$$BK,0$

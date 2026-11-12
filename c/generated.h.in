@@ -1,0 +1,2 @@
+#pragma once
+#define TINKWANIOS_INSTALL_DIR "@CMAKE_INSTALL_PREFIX@"
