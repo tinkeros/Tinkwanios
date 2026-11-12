@@ -1,13 +1,17 @@
 
 # Welcome to Tinkwanios a TinkerOS fork of Aiwnios
 
-This is a HolyC Compiler/Runtime written for 64-bit x86_64 and aarch64 machines
+This is a HolyC Compiler/Runtime written for 64-bit x86_64 and aarch64 machines.
 
 ## About this fork
 
 Tinkwanios is [Aiwnios](https://github.com/nrootconauto/aiwnios) with the work
 [TinkerOS](https://github.com/Tinkeros/TinkerOS) did to extend TempleOS:
 
+- **TempleOS 640x480x16 colors by default** Fully backwards compatible TempleOS
+  API and HolyC, you can use different resolutions, scales, more colors, sounds,
+  and HolyC extensions, but only if you choose to! Default TempleOS apps run just
+  like they normally would on TempleOS!
 - **Native bitfield members.** A `:width` on a class member is real: plain `.`
   and `->` read and write just those bits, and consecutive same-sized
   bitfields outside a union pack into one storage slot the way C does.
@@ -16,11 +20,14 @@ Tinkwanios is [Aiwnios](https://github.com/nrootconauto/aiwnios) with the work
   TempleOS's `lastclass`: it resolves to `sizeof()` the first argument's
   class, which is what makes `ClassCpy(&dst,&src)` need no `sizeof`.
   See `Demo/FirstSize.HC`.
-- **230 colors instead of 16.** A pixel was always a byte here; three places
+- **230 colors (if you want)** A pixel was always a byte here; three places
   emulated planar VGA's 4-bit truncation anyway. The extended palette is the
   16 CGA colors plus the 214 web-safe cube entries not already among them.
-  See `Demo/Graphics/Palette.HC`.
-- TinkerOS's software OPL2 FM synthesizer with General MIDI instruments
+  See `Demo/Graphics/TinkerOS`.
+- TinkerOS's software OPL2 FM synthesizer with General MIDI instruments.
+  Press `CTRL-ALT-m` to bring up the mixer and change things up if you like!
+- Include extra Apps/Emulators/Games from TinkerOS
+- Includes DOOM port TOOM with glowing glowies! `/Community/Toom`
 - **TinkerOS's and TempleOS's demos**, over 200 of them, under `Demo/`,
   and `Misc/OSTestSuite.HC` to run the lot and report on each one.
 
