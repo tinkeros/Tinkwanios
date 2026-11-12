@@ -68,9 +68,9 @@ cd ..;
 ### Windows 11 Quickstart
 
 1. Clone Tinkwanios into the location of your choice
-2. Download statically compiled tinkwanios.exe and compiled HolyC runtime components HCRT2.BIN/HCRT2.DBG.Z and place them in the Tinkwanios folder
-3. Run tinkwanios.exe
-4. Optionally set .HC files to open with tinkwanios.exe by default (note the will need to be located in a subdirectory of the Tinkwanios folder in order for the virtual filesystem T: drive to find them!)
+2. Download statically compiled `tinkwanios.exe` and compiled HolyC runtime components `HCRT2.BIN/HCRT2.DBG.Z` and place them in the Tinkwanios folder.
+3. Run `tinkwanios.exe`
+4. Optionally set .HC files to open with `tinkwanios.exe` by default (note the will need to be located in a subdirectory of the Tinkwanios folder in order for the virtual filesystem T: drive to find them!)
 
 ### Windows 10/11 Build
 
