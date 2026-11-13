@@ -339,6 +339,7 @@ PrsAddSymbol("__HC_ICAdd_Sqr", STK___HC_ICAdd_Sqr, 1);
 ```
 ## Credits
 
+- [Aiwnios of course!](https://github.com/aiwnios/Aiwnios)
 - [argtable3](https://github.com/argtable/argtable3)
 - [Cmake architecture detector by axr](https://github.com/axr/solar-cmake/blob/master/TargetArch.cmake)
 - [Xbyak Arm assembler](https://github.com/fujitsu/xbyak_aarch64)
