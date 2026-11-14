@@ -20,10 +20,7 @@ Tinkwanios is [Aiwnios](https://github.com/nrootconauto/aiwnios) with the work
   TempleOS's `lastclass`: it resolves to `sizeof()` the first argument's
   class, which is what makes `ClassCpy(&dst,&src)` need no `sizeof`.
   See `Demo/FirstSize.HC`.
-- **230 colors (if you want)** A pixel was always a byte here; three places
-  emulated planar VGA's 4-bit truncation anyway. The extended palette is the
-  16 CGA colors plus the 214 web-safe cube entries not already among them.
-  See `Demo/Graphics/TinkerOS`.
+- **230 colors (if you want)** First 16 colors are TempleOS original for full backward compatibility.  See `Demo/Graphics/TinkerOS`. Colors palettes: [Temple/TinkerOS default color maps](https://tinkeros.github.io/palette.html) or sorted by color [Sorted TinkerOS color palette](https://tinkeros.github.io/palette_sorted.html)
 - TinkerOS's software OPL2 FM synthesizer with General MIDI instruments.
   Press `CTRL-ALT-m` to bring up the mixer and change things up if you like!
 - Includes extra Apps/Demos/Emulators/Games from TinkerOS
