@@ -167,10 +167,6 @@ CopyTree("Src","Root/Src");
 TinkwaniosPack("a2.exe","Beep;\n","Root");
 ```
 
-# Future
-
-I plan on adding something lit like an arm assembler from HolyC.
-
 ## Internals
 
 In tinkwanios,the secret sauce is in mainly in `*_backend.c`. There you will find the compiler.
@@ -180,8 +176,6 @@ I have gutted out the TempleOS expression parsing code and replaced it with call
 
 **THIS COMPILER USES REVERSE POLISH NOTATION**. And statements are reversed too so
 the last statement is at `head->base.next` and the first one ends at `head->base.last`.
-Email *nrootconauto@gmail.com* for more info(I hear my code is unreadable so I will stop
-explaining here). 
 
 ## Sockets
 
