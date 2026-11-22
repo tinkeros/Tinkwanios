@@ -5,7 +5,7 @@
 //
 //Conventions are TinkerOS's, unchanged: the number or char arrives in RAX,
 //a string pointer in RSI, and every register is preserved.  Lives in its own
-//file because Src/StrA.HC is #included twice by FULL_PACKAGE.HC and an asm
+//file because Kernel/StrA.HC is #included twice by FULL_PACKAGE.HC and an asm
 //label may only be defined once.
 //TinkerOS's versions call PutS and PutChars straight out of the asm.  That
 //does not carry over: PutS here only feeds the key-device chain, so nothing

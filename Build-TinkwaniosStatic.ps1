@@ -13,9 +13,12 @@
   4. Checks the exe's import table: every DLL it needs must be one that ships
      with Windows, so it runs on any Windows 10/11 x64 machine without MSYS2.
 
-  The exe still needs the runtime image HCRT2.BIN (and the Src/Doc trees) next
-  to it, exactly like any other tinkwanios build. Pass -Bootstrap to rebuild
-  HCRT2.BIN with the new exe after compiling it.
+  The exe still needs the runtime image HCRT2.BIN (and the HolyC source trees
+  Src/, Adam/, Compiler/, Kernel/, plus Doc/) next
+  to it, exactly like any other tinkwanios build. HCRT2.BIN is always
+  rebuilt with the new exe ("tinkwanios.exe -b"), because the boot code in
+  Src/FULL_PACKAGE.HC is compiled into it: a stale HCRT2.BIN keeps running
+  the old boot code against the new source tree.
 
 .PARAMETER MsysRoot
   Where MSYS2 is (or will be) installed. Default C:\msys64.
@@ -27,7 +30,8 @@
   Delete the build directory before configuring.
 
 .PARAMETER Bootstrap
-  After building the exe, run "tinkwanios.exe -b" to regenerate HCRT2.BIN.
+  Ignored; HCRT2.BIN is now always regenerated. Still accepted so existing
+  command lines keep working.
 
 .PARAMETER SkipInstall
   Do not install or update MSYS2 packages; just build.
@@ -35,7 +39,7 @@
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File .\Build-TinkwaniosStatic.ps1
 .EXAMPLE
-  .\Build-TinkwaniosStatic.ps1 -Clean -Bootstrap
+  .\Build-TinkwaniosStatic.ps1 -Clean
 #>
 [CmdletBinding()]
 param(
@@ -174,18 +178,19 @@ if ($foreign) { Fail ("tinkwanios.exe depends on non-system DLLs: " + ($foreign 
 Write-Host 'All imports are Windows system DLLs.' -ForegroundColor Green
 
 # --------------------------------------------------------- bootstrap ------
-if ($Bootstrap) {
-  Step 'Bootstrapping HCRT2.BIN (tinkwanios.exe -b)'
-  Push-Location $RepoRoot
-  try {
-    $log = & $CliExe -b 2>&1 | Tee-Object -Variable out | Out-String
-    $out | Out-Host
-    if ($log -match '(?m)^ERR:') { Fail 'Bootstrap stage 1 reported ERR: lines' }
-    if ($log -notmatch '(?m)^Errs:') { Fail 'Bootstrap never reached stage 2 (no Errs: line)' }
-    & $CliExe -c FreshOnce.HC | Out-Host
-  } finally { Pop-Location }
-}
+# Always: the boot code (Src/FULL_PACKAGE.HC) lives inside HCRT2.BIN, so an
+# HCRT2.BIN left over from before a source change boots the old code -- e.g.
+# #including files that have since moved, which aborts the rest of boot.
+Step 'Bootstrapping HCRT2.BIN (tinkwanios.exe -b)'
+Push-Location $RepoRoot
+try {
+  $log = & $CliExe -b 2>&1 | Tee-Object -Variable out | Out-String
+  $out | Out-Host
+  if ($log -match '(?m)^ERR:') { Fail 'Bootstrap stage 1 reported ERR: lines' }
+  if ($log -notmatch '(?m)^Errs:') { Fail 'Bootstrap never reached stage 2 (no Errs: line)' }
+  & $CliExe -c FreshOnce.HC | Out-Host
+} finally { Pop-Location }
 
 $size = '{0:N1} MB' -f ((Get-Item $Exe).Length / 1MB)
 Write-Host "`nBUILD OK: $Exe ($size)" -ForegroundColor Green
-Write-Host 'Ship it with HCRT2.BIN, Src\ and Doc\, or make one exe with .\Pack-Tinkwanios.ps1.'
+Write-Host 'Ship it with HCRT2.BIN, Src\ Adam\ Compiler\ Kernel\ and Doc\, or make one exe with .\Pack-Tinkwanios.ps1.'

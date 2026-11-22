@@ -62,6 +62,15 @@ find_package(SDL2 REQUIRED)
 if (NOT SDL2_FOUND)
   message(FATAL_ERROR "Please install SDL2")
 endif ()
+# Older SDL2 config packages (< 2.0.12) set variables but create no imported
+# targets.  Synthesise SDL2::SDL2 from the variables so the rest of the file
+# works unchanged on both old and new installs.
+if(NOT TARGET SDL2::SDL2)
+  add_library(SDL2::SDL2 INTERFACE IMPORTED)
+  set_target_properties(SDL2::SDL2 PROPERTIES
+    INTERFACE_LINK_LIBRARIES "${SDL2_LIBRARIES}"
+    INTERFACE_INCLUDE_DIRECTORIES "${SDL2_INCLUDE_DIRS}")
+endif()
 target_include_directories(tinkwanios PUBLIC ${SDL2_INCLUDE_DIRS})
 
 if (ARCH STREQUAL arm64)
@@ -150,7 +159,12 @@ if (BUILD_HCRT AND NOT DEFINED EMSCRIPTEN)
   add_custom_target(HCRT2.BIN
     ALL
     COMMAND ${BUILD_CMD}
-    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Src" tinkwanios
+    DEPENDS
+      "${CMAKE_CURRENT_SOURCE_DIR}/Src"
+      "${CMAKE_CURRENT_SOURCE_DIR}/Adam"
+      "${CMAKE_CURRENT_SOURCE_DIR}/Compiler"
+      "${CMAKE_CURRENT_SOURCE_DIR}/Kernel"
+      tinkwanios
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
   )
   add_custom_target(Registry.HC.Z
@@ -229,19 +243,22 @@ include (CPack)
 
 set(
   TEMPLATE_FILES
-  Adam/God/HSNotes.DD
   Doc
   Apps
   TinkwaniosHelp
+  # The HolyC sources: Src holds what has no TinkerOS counterpart, the other
+  # three mirror TinkerOS's layout. Adam also carries God/HSNotes.DD,
+  # God/Vocab.DD and AutoComplete/AC{Defs,Words}.DATA, which used to be
+  # listed here one by one.
   Src
-  Adam/God/Vocab.DD
+  Adam
+  Compiler
+  Kernel
   PersonalMenu.DD
   HCRT2.BIN
   HCRT2.DBG.Z
   Demo
   Misc/Bible.TXT.Z
-  Src/ACDefs.DATA
-  Src/ACWords.DATA
 )
 
 if(NOT WIN32)
@@ -254,6 +271,10 @@ if(NOT WIN32)
         DIRECTORY 
         "${CMAKE_CURRENT_SOURCE_DIR}/${F}"
         DESTINATION share/tinkwanios
+        # Demo scratch output, not source: Demo/MultiCore/LoadTest.HC drives
+        # Cmp("Compiler") in a loop and leaves ~121K of Compiler.BIN.Z in
+        # Compiler/. copy_to_release.sh already excludes it by name.
+        PATTERN "Compiler.BIN*" EXCLUDE
       )
     else()
        install (
@@ -272,6 +293,7 @@ else()
         DIRECTORY 
         "${CMAKE_CURRENT_SOURCE_DIR}/${F}"
         DESTINATION T_Template
+        PATTERN "Compiler.BIN*" EXCLUDE
       )
      else()
        install (

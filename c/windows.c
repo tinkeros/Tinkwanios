@@ -35,6 +35,10 @@ int64_t tinkwan_gr_height_scale = 1;
 int64_t tinkwan_gr_width = 640;
 int64_t tinkwan_gr_height = 480;
 static SDL_Surface *fbsurf;
+// The host window's title. SetHostWindowTitle() changes it; _DrawWindowNew()
+// creates the window with it, so a title set before the window exists (or
+// before a later recreate) still takes effect. Only the SDL thread touches it.
+static char host_window_title[256] = "TINKWANIOS";
 static uint32_t pal32[256];
 static int64_t *winmgr_flags;
 #define TINKWAN_TASKf_SUSPENDED 2
@@ -81,6 +85,7 @@ static SDL_mutex *screen_mutex, *screen_mutex2;
 static int64_t screen_ready = 0, screen_update_in_progress = 0;
 #define USER_CODE_DRAW_WIN_NEW 1
 #define USER_CODE_UPDATE       2
+#define USER_CODE_SET_TITLE   3
 void DeinitVideo() {
   if (screen_mutex)
     SDL_LockMutex(screen_mutex);
@@ -125,10 +130,12 @@ static void _DrawWindowNew() {
                           SDL_HINT_OVERRIDE);
   SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY, "linear",
                           SDL_HINT_OVERRIDE);
+#if SDL_VERSION_ATLEAST(2, 0, 18)
   SDL_SetHintWithPriority(SDL_HINT_ALLOW_ALT_TAB_WHILE_GRABBED, "1",
                           SDL_HINT_OVERRIDE);
+#endif
   SDL_RendererInfo info;
-  window = SDL_CreateWindow("TINKWANIOS", SDL_WINDOWPOS_UNDEFINED,
+  window = SDL_CreateWindow(host_window_title, SDL_WINDOWPOS_UNDEFINED,
                             SDL_WINDOWPOS_UNDEFINED,
                             tinkwan_fb_width, tinkwan_fb_height,
                             SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
@@ -140,8 +147,12 @@ static void _DrawWindowNew() {
 #ifndef __EMSCRIPTEN__
   SDL_SetWindowIcon(window, window_icon);
 #endif
+#if SDL_VERSION_ATLEAST(2, 0, 18)
   SDL_SetWindowKeyboardGrab(window,
                             sdl_window_grab_enable ? SDL_TRUE : SDL_FALSE);
+#else
+  SDL_SetWindowGrab(window, sdl_window_grab_enable ? SDL_TRUE : SDL_FALSE);
+#endif
   screen = SDL_CreateRGBSurface(0, tinkwan_gr_width, tinkwan_gr_height, 8, 0,
                                 0, 0, 0);
   fbsurf = SDL_CreateRGBSurfaceWithFormat(0, tinkwan_fb_width,
@@ -220,6 +231,46 @@ void UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
 }
 int64_t ScreenUpdateInProgress(int64_t *_ __attribute__((unused))) {
   return Bt(&screen_update_in_progress, 0);
+}
+// Runs on the SDL thread (or, with no window, on the caller's -- nothing
+// there touches SDL). Takes ownership of `title`.
+static void _SetHostWindowTitle(char *title) {
+  snprintf(host_window_title, sizeof host_window_title, "%s", title);
+  if (window)
+    SDL_SetWindowTitle(window, host_window_title);
+  SDL_free(title);
+}
+// HolyC: U0 SetHostWindowTitle(U8 *title). Callable from any task, so it
+// hands the string to InputLoop the way UpdateScreen() and DrawWindowNew()
+// hand over their work -- SDL wants window calls on the thread that owns the
+// window, which matters on Windows (SetWindowTextW on the owning thread) as
+// much as on X11. SDL_PushEvent itself is thread safe.
+// SDL takes the title as UTF-8, so a plain ASCII string arrives as typed; a
+// high-byte CP437 char is not valid UTF-8 and shows up as a replacement glyph.
+int64_t SetHostWindowTitle(int64_t *stk) {
+  char *title = (char *)stk[0], *copy;
+  if (!title)
+    return 0;
+  if (!(copy = SDL_strdup(title)))
+    return 0;
+#ifdef __EMSCRIPTEN__
+  _SetHostWindowTitle(copy);
+#else
+  // -c and --tui never create a window, and their SDL thread runs
+  // TUIInputLoop, which would never consume the event -- just remember the
+  // title for a window created later.
+  if (!window) {
+    _SetHostWindowTitle(copy);
+    return 0;
+  }
+  SDL_Event event;
+  memset(&event, 0, sizeof event);
+  event.user.code = USER_CODE_SET_TITLE;
+  event.user.data1 = copy;
+  event.type = user_ev_num;
+  SDL_PushEvent(&event);
+#endif
+  return 0;
 }
 void PresentFB(void) {
   SDL_Texture *text;
@@ -768,6 +819,9 @@ void InputLoop(void *ul) {
           break;
         case USER_CODE_DRAW_WIN_NEW:
           _DrawWindowNew();
+          break;
+        case USER_CODE_SET_TITLE:
+          _SetHostWindowTitle(e.user.data1);
         }
       }
     }
@@ -793,6 +847,9 @@ void EMInputLoopRun(void *ul) {
         break;
       case USER_CODE_DRAW_WIN_NEW:
         _DrawWindowNew();
+        break;
+      case USER_CODE_SET_TITLE:
+        _SetHostWindowTitle(e.user.data1);
       }
     }
     goto again;
@@ -806,5 +863,9 @@ void WaitForSDLQuit() {
 void SetCaptureMouse(int64_t i) {
   i = i ? SDL_TRUE : SDL_FALSE;
   SDL_SetRelativeMouseMode(i);
+#if SDL_VERSION_ATLEAST(2, 0, 18)
   SDL_SetWindowMouseGrab(window, i);
+#else
+  SDL_SetWindowGrab(window, i);
+#endif
 }

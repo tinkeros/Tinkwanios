@@ -1211,8 +1211,9 @@ int64_t ARM_ldrswRegRegShiftX(int64_t r, int64_t a, int64_t b) {
 }
 
 static int64_t LdExclusive(int64_t sz, int64_t o0, int64_t d, int64_t s) {
-  return (sz << 30) | (0x8 << 24) | (1 << 22) | (0x1f << 16) | (0x1f << 10) |
-         (s << 5) | d;
+  // o0 (bit 15) is the acquire bit: LDXR vs LDAXR
+  return (sz << 30) | (0x8 << 24) | (1 << 22) | (0x1f << 16) | (o0 << 15) |
+         (0x1f << 10) | (s << 5) | d;
 }
 
 int64_t ARM_ldaxrb(int64_t d, int64_t s) {

@@ -1619,7 +1619,7 @@ static int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
     } else if (src->mode == MD_I64 && dst->raw_type == RT_F64) {
       code_off = __ICMoveF64(cctrl, dst->reg, src->integer, bin, code_off);
     } else if (src->mode == MD_F64 && dst->raw_type != RT_F64) {
-      code_off = __ICMoveI64(cctrl, dst->reg, src->flt, bin, code_off);
+      code_off = __ICMoveI64(cctrl, dst->reg, (int64_t)src->flt, bin, code_off);
     } else if (src->mode == MD_STATIC) {
       use_reg2 = TINKWANIOS_TMP_IREG_POOP;
       indir_off = 0;
@@ -1882,7 +1882,7 @@ static int64_t __SexyWriteIntoDst(CCmpCtrl *cctrl, CRPN *deref, CICArg *arg,
         TINKWANIOS_ADD_CODE(ARM_lslImmX(MIR(cctrl, 0), derefed.reg2, 1));         \
         TINKWANIOS_ADD_CODE(ARM_addRegX(MIR(cctrl, 1), 0, derefed.reg));          \
         TINKWANIOS_ADD_CODE(ARM_ldaxrh(0, 1));                                    \
-        if (RT_U8i == derefed.raw_type)                                        \
+        if (RT_U16i == derefed.raw_type)                                       \
           TINKWANIOS_ADD_CODE(ARM_uxthX(0, 0))                                    \
         else                                                                   \
           TINKWANIOS_ADD_CODE(ARM_sxthX(0, 0))                                    \
@@ -1892,7 +1892,7 @@ static int64_t __SexyWriteIntoDst(CCmpCtrl *cctrl, CRPN *deref, CICArg *arg,
         TINKWANIOS_ADD_CODE(ARM_lslImmX(MIR(cctrl, 0), derefed.reg2, 2));         \
         TINKWANIOS_ADD_CODE(ARM_addRegX(MIR(cctrl, 1), 0, derefed.reg));          \
         TINKWANIOS_ADD_CODE(ARM_ldaxr(0, 1));                                     \
-        if (RT_U8i == derefed.raw_type)                                        \
+        if (RT_U32i == derefed.raw_type)                                       \
           TINKWANIOS_ADD_CODE(ARM_uxtwX(0, 0))                                    \
         else                                                                   \
           TINKWANIOS_ADD_CODE(ARM_sxtwX(0, 0))                                    \
@@ -1924,7 +1924,7 @@ static int64_t __SexyWriteIntoDst(CCmpCtrl *cctrl, CRPN *deref, CICArg *arg,
       case RT_I16i:                                                            \
       case RT_U16i:                                                            \
         TINKWANIOS_ADD_CODE(ARM_ldaxrh(MIR(cctrl, 0), 1));                        \
-        if (RT_U8i == derefed.raw_type)                                        \
+        if (RT_U16i == derefed.raw_type)                                       \
           TINKWANIOS_ADD_CODE(ARM_uxthX(0, 0))                                    \
         else                                                                   \
           TINKWANIOS_ADD_CODE(ARM_sxthX(0, 0))                                    \
@@ -1932,7 +1932,7 @@ static int64_t __SexyWriteIntoDst(CCmpCtrl *cctrl, CRPN *deref, CICArg *arg,
       case RT_I32i:                                                            \
       case RT_U32i:                                                            \
         TINKWANIOS_ADD_CODE(ARM_ldaxr(MIR(cctrl, 0), 1));                         \
-        if (RT_U8i == derefed.raw_type)                                        \
+        if (RT_U32i == derefed.raw_type)                                       \
           TINKWANIOS_ADD_CODE(ARM_uxtwX(0, 0))                                    \
         else                                                                   \
           TINKWANIOS_ADD_CODE(ARM_sxtwX(0, 0))                                    \
@@ -1943,26 +1943,28 @@ static int64_t __SexyWriteIntoDst(CCmpCtrl *cctrl, CRPN *deref, CICArg *arg,
         break;                                                                 \
       }                                                                        \
     }
+// Status register is X4: STLXR with Ws==Wt (or Ws==Xn) is CONSTRAINED
+// UNPREDICTABLE, and must not clobber the value we may still need.
 #define ATOMIC_STORE(derefed, r)                                               \
   switch (derefed.raw_type) {                                                  \
   case RT_I8i:                                                                 \
   case RT_U8i:                                                                 \
-    TINKWANIOS_ADD_CODE(ARM_stlxrb(MIR(cctrl, 0), r, 1));                         \
+    TINKWANIOS_ADD_CODE(ARM_stlxrb(MIR(cctrl, 4), r, 1));                         \
     break;                                                                     \
   case RT_I16i:                                                                \
   case RT_U16i:                                                                \
-    TINKWANIOS_ADD_CODE(ARM_stlxrh(MIR(cctrl, 0), r, 1));                         \
+    TINKWANIOS_ADD_CODE(ARM_stlxrh(MIR(cctrl, 4), r, 1));                         \
     break;                                                                     \
   case RT_I32i:                                                                \
   case RT_U32i:                                                                \
-    TINKWANIOS_ADD_CODE(ARM_stlxrh(MIR(cctrl, 0), r, 1));                         \
+    TINKWANIOS_ADD_CODE(ARM_stlxr(MIR(cctrl, 4), r, 1));                         \
     break;                                                                     \
   case RT_I64i:                                                                \
   case RT_U64i:                                                                \
-    TINKWANIOS_ADD_CODE(ARM_stlxrX(MIR(cctrl, 0), r, 1));                         \
+    TINKWANIOS_ADD_CODE(ARM_stlxrX(MIR(cctrl, 4), r, 1));                         \
     break;                                                                     \
   }                                                                            \
-  TINKWANIOS_ADD_CODE(ARM_cbnz(0, retry - code_off));                             \
+  TINKWANIOS_ADD_CODE(ARM_cbnz(4, retry - code_off));                             \
   }
 static int64_t __SexyPreOp(CCmpCtrl *cctrl, CRPN *rpn,
                            int64_t (*i_imm_op)(int64_t, int64_t, int64_t),
@@ -2044,9 +2046,6 @@ static int64_t __SexyPreOp(CCmpCtrl *cctrl, CRPN *rpn,
       if ((rpn->flags & ICF_LOCK_EXPR) &&
           (tmp.mode == MD_INDIR_REG || tmp.mode == __MD_ARM_SHIFT)) {
         ATOMIC_LOAD(derefed);
-        tmp.mode = MD_REG;
-        tmp.reg = 0;
-        code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
         code = i_imm_op(MIR(cctrl, 0), 0, rpn->integer);
         if (code != ARM_ERR_INV_OFF) {
           TINKWANIOS_ADD_CODE(code);
@@ -2055,6 +2054,12 @@ static int64_t __SexyPreOp(CCmpCtrl *cctrl, CRPN *rpn,
           TINKWANIOS_ADD_CODE(i_reg_op(MIR(cctrl, 0), 0, 2))
         }
         ATOMIC_STORE(derefed, 0);
+        // Pre-op yields the NEW value; move it out only after the exclusive
+        // pair so no store lands between LDAXR and STLXR.
+        tmp.mode = MD_REG;
+        tmp.reg = 0;
+        tmp.raw_type = RT_I64i;
+        code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
         return code_off;
       }
       code_off = PutICArgIntoReg(cctrl, &tmp, tmp.raw_type, 2, bin, code_off);
@@ -2117,22 +2122,28 @@ static int64_t __SexyPostOp(CCmpCtrl *cctrl, CRPN *rpn,
     } else {
       code_off = DerefToICArg(cctrl, &derefed, next, 3, bin, code_off);
       tmp = derefed;
-      code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
       if ((rpn->flags & ICF_LOCK_EXPR) &&
           (tmp.mode == MD_INDIR_REG || tmp.mode == __MD_ARM_SHIFT)) {
+        // X1=address,X0=old value,X2=new value. (This used to apply the op
+        // to X1, the ADDRESS, and store the unchanged value to addr+1, so the
+        // exclusive store never succeeded => "lock x++" spun forever.)
         ATOMIC_LOAD(derefed);
-        tmp.mode = MD_REG;
-        tmp.reg = 1;
-        code = i_imm_op(MIR(cctrl, 1), 1, rpn->integer);
+        code = i_imm_op(MIR(cctrl, 2), 0, rpn->integer);
         if (code != ARM_ERR_INV_OFF) {
           TINKWANIOS_ADD_CODE(code);
         } else {
-          code_off = __ICMoveI64(cctrl, 2, rpn->integer, bin, code_off);
-          TINKWANIOS_ADD_CODE(i_reg_op(MIR(cctrl, 1), 1, 2))
+          code_off = __ICMoveI64(cctrl, 3, rpn->integer, bin, code_off);
+          TINKWANIOS_ADD_CODE(i_reg_op(MIR(cctrl, 2), 0, 3))
         }
-        ATOMIC_STORE(derefed, 0);
+        ATOMIC_STORE(derefed, 2);
+        // Post-op yields the OLD value
+        tmp.mode = MD_REG;
+        tmp.reg = 0;
+        tmp.raw_type = RT_I64i;
+        code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
         return code_off;
       }
+      code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
       code_off = PutICArgIntoReg(cctrl, &tmp, tmp.raw_type, 2, bin, code_off);
       code = i_imm_op(MIR(cctrl, tmp.reg), tmp.reg, rpn->integer);
       if (code != ARM_ERR_INV_OFF) {
@@ -2230,11 +2241,11 @@ static int64_t __SexyAssignOp(CCmpCtrl *cctrl, CRPN *rpn,
         retry = code_off;
         ATOMIC_LOAD(derefed);
         TINKWANIOS_ADD_CODE(i_imm_op(MIR(cctrl, 0), 0, ConstVal(b)));
+        ATOMIC_STORE(derefed, 0);
         tmp2.mode = MD_REG;
         tmp2.reg = 0;
         tmp2.raw_type = RT_I64i;
         code_off = ICMov(cctrl, &rpn->res, &tmp2, bin, code_off);
-        ATOMIC_STORE(derefed, 0);
       }
     }
     return code_off;
@@ -2268,11 +2279,11 @@ static int64_t __SexyAssignOp(CCmpCtrl *cctrl, CRPN *rpn,
           goto normal;
         ATOMIC_LOAD(derefed);
         TINKWANIOS_ADD_CODE(i_op(MIR(cctrl, 0), 0, b->res.reg));
+        ATOMIC_STORE(derefed, 0);
         tmp2.mode = MD_REG;
         tmp2.reg = 0;
         tmp2.raw_type = RT_I64i;
         code_off = ICMov(cctrl, &rpn->res, &tmp2, bin, code_off);
-        ATOMIC_STORE(derefed, 0);
         return code_off;
       }
       //
@@ -3266,6 +3277,10 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       PushTmpDepthFirst(cctrl, next2, 0);
       PopTmp(cctrl, next2);
     }
+    // Evaluate the selector expression (was missing here; IC_BOUNDED_SWITCH
+    // and the x86_64 backend both do this). Without it X0 got whatever stale
+    // value was in next2's result register, indexing out of the jump table.
+    code_off = __OptPassFinal(cctrl, next2, bin, code_off);
     tmp.raw_type = RT_I64i;
     tmp.mode = MD_REG;
     tmp.reg = 0;

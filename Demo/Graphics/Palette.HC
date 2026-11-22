@@ -2,7 +2,7 @@
 // The whole live palette, all PAL_COLORS_NUM entries of it: the 16 CGA colors
 // the OS has always had, then the 214 web-safe entries GrSetExtPalette() adds
 // above them, then the unused slots and TRANSPARENT. Only possible because a
-// pixel is a full 8-bit palette index. See Src/PalGen.HC.
+// pixel is a full 8-bit palette index. See Adam/Gr/PalGen.HC.
 //
 U0 PaletteDemo()
 {

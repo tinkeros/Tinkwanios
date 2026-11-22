@@ -67,7 +67,7 @@ run the matching `.ps1` with `-ExecutionPolicy Bypass` for that one process.
 They work on a stock Windows install, where running `.ps1` files directly is
 blocked with "running scripts is disabled on this system", and they don't
 change any system setting. They accept the same options as the scripts, for
-example `.\Build-TinkwaniosStatic.cmd -Clean -Bootstrap`.
+example `.\Build-TinkwaniosStatic.cmd -Clean -SkipInstall`.
 
 If you would rather run the `.ps1` files directly, allow scripts for the
 current PowerShell window only:
@@ -97,7 +97,7 @@ When it finishes you get:
 | Option | Effect |
 |---|---|
 | `-Clean` | Delete the build directory first (a full rebuild). |
-| `-Bootstrap` | After building, run `tinkwanios.exe -b` to regenerate `HCRT2.BIN` with the new exe, then `tinkwanios.exe -c FreshOnce.HC`. Fails if stage 1 prints `ERR:` lines or stage 2 never prints its `Errs:` line. |
+| `-Bootstrap` | Ignored (the bootstrap always runs now); still accepted so old command lines work. |
 | `-SkipInstall` | Do not install or update MSYS2 or its packages; just build. |
 | `-MsysRoot <dir>` | MSYS2 location (default `C:\msys64`). |
 | `-BuildDir <dir>` | CMake build directory (default `build\win64-static`). |
@@ -105,13 +105,17 @@ When it finishes you get:
 Examples:
 
 ```powershell
-.\Build-TinkwaniosStatic.cmd -Clean -Bootstrap
+.\Build-TinkwaniosStatic.cmd -Clean
 .\Build-TinkwaniosStatic.cmd -SkipInstall
 ```
 
-By default the script builds only the exe (`-DBUILD_HCRT=OFF`) and leaves the
-existing `HCRT2.BIN` alone; use `-Bootstrap` when you also want the runtime
-image rebuilt.
+After building the exe, the script always regenerates `HCRT2.BIN`: it runs
+`tinkwanios-cli.exe -b`, then `tinkwanios-cli.exe -c FreshOnce.HC`, and fails if
+stage 1 prints `ERR:` lines or stage 2 never prints its `Errs:` line. This is
+not optional because the boot code (`Src/FULL_PACKAGE.HC`) is compiled into
+`HCRT2.BIN`. An old `HCRT2.BIN` keeps running the old boot code against the new
+source tree, which can quietly skip things like AutoComplete indexing and
+`~/MakeHome.HC`.
 
 ## Two executables: `tinkwanios.exe` and `tinkwanios-cli.exe`
 
@@ -139,11 +143,11 @@ attaches to that console. But a shell does not *wait* for a GUI program, so
 for interactive text use run `tinkwanios-cli.exe`:
 
 ```
-.	inkwanios-cli.exe -c
-.	inkwanios-cli.exe --tui
+.\tinkwanios-cli.exe -c
+.\tinkwanios-cli.exe --tui
 ```
 
-The bootstrap (`-Bootstrap`) runs through `tinkwanios-cli.exe` for the same
+The bootstrap runs through `tinkwanios-cli.exe` for the same
 reason. Don't double-click `tinkwanios-cli.exe`: it is a console program and
 has the same Explorer problem described above.
 
@@ -157,7 +161,7 @@ HolyC runtime from files next to it. Copy at least:
 
 * `tinkwanios.exe` (and `tinkwanios-cli.exe` if you want `-c`/`--tui`)
 * `HCRT2.BIN` (and `HCRT2.DBG.Z` for symbols in backtraces)
-* the `Src\` and `Doc\` directories
+* the HolyC source directories (`Src\`, `Adam\`, `Compiler\`, `Kernel\`) and `Doc\`
 
 or the whole repository tree. To ship a single file instead, pack it (next
 section).
@@ -191,10 +195,10 @@ for you.
 | `-BootCommand <hc>` | HolyC run at startup. The default for `-App` is `Cd("/Apps/X");#include "Run";`; with no app it is empty, which boots to the desktop. |
 | `-Include <paths>` | More files or folders (repo-relative) for the RAM disk. |
 | `-Output <file>` | Where to write the exe (default `dist\<app>.exe`). |
-| `-NoSrcDoc` | Leave `Src\` and `Doc\` off the RAM disk. The README says packages need them for the desktop and help, so this only suits apps that do not use those. It cuts the size from ~35 MB to ~6 MB. |
+| `-NoSrcDoc` | Leave the HolyC source directories (`Src\`, `Adam\`, `Compiler\`, `Kernel\`) and `Doc\` off the RAM disk. The README says packages need them for the desktop and help, so this only suits apps that do not use those. It cuts the size from ~35 MB to ~6 MB. |
 
 How it works: the script builds a private boot drive in `build\pack\stage`
-(the exe, `HCRT2.BIN`, `Src`, `Doc`, and a `Root\` folder with the RAM-disk
+(the exe, `HCRT2.BIN`, `Src`, `Adam`, `Compiler`, `Kernel`, `Doc`, and a `Root\` folder with the RAM-disk
 contents). It then runs `tinkwanios.exe -c -t .` there on a generated
 `Pack.HC` that calls `TinkwaniosPack`, and checks that the output ends in the
 `TinkPack` trailer. The private stage matters: `TinkwaniosPack` embeds

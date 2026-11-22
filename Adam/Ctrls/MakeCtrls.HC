@@ -1,0 +1,5 @@
+#help_index "Ctrls"
+#help_file "::/Doc/Ctrls"
+#include "Adam/Ctrls/CtrlsA.HC"
+#include "Adam/Ctrls/CtrlsBttn.HC"
+#include "Adam/Ctrls/CtrlsSlider.HC"

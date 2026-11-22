@@ -1,19 +1,19 @@
 CCmpGlbls	cmp;
-#include "OptLib.HC"
-#include "CInit.HC"
-#include "AsmLib.HC"
-#include "CExcept.HC"
-#include "LexLib.HC"
-#include "Lex.HC"
-#include "PrsLib.HC"
-#include "PrsVar.HC"
-#include "CMisc.HC"
+#include "Compiler/OptLib.HC"
+#include "Compiler/CInit.HC"
+#include "Compiler/AsmLib.HC"
+#include "Compiler/CExcept.HC"
+#include "Compiler/LexLib.HC"
+#include "Compiler/Lex.HC"
+#include "Compiler/PrsLib.HC"
+#include "Compiler/PrsVar.HC"
+#include "Compiler/CMisc.HC"
 CmpLoadDefines;		
 CmpFillTables;
 CMiscInit;
-#include "TINKWANIOS_PrsExp.HC"
-#include "TINKWANIOS_CodeGen.HC"
-#include "PrsStmt.HC";
-#include "AsmResolve.HC"
-#include "CMain.HC"
+#include "Compiler/TINKWANIOS_PrsExp.HC"
+#include "Src/TINKWANIOS_CodeGen.HC"
+#include "Compiler/PrsStmt.HC";
+#include "Compiler/AsmResolve.HC"
+#include "Compiler/CMain.HC"
 //TinkwaniosAotCompile("HCRT_TOS.HC","HCRT.BIN")

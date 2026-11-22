@@ -34,7 +34,16 @@ enter:;
   if (!lex->file)
     return 0;
   // We terminate the silly sauces with 0 as per ASCII nul character
-  if (ret = lex->file->text[lex->file->pos]) {
+  //
+  // Read it unsigned. `char` is signed on the targets we build for, so a
+  // CP437 byte like 0xE3 (pi) or 0xEC (infinity) would arrive here negative,
+  // miss the identifier cases in Lex() and come out as
+  // "Unexpected charactor". TempleOS uses those bytes as real identifiers
+  // (Kernel/KernelA.HH defines them), and the HolyC lexer in Compiler/Lex.HC
+  // accepts them, so stage 1 has to as well or the HCRT sources can never
+  // carry one.
+  //
+  if (ret = (unsigned char)lex->file->text[lex->file->pos]) {
     lex->file->pos++;
     if (ret == 5 || ret == '\r') // TempleOS cursor charactor
       goto enter;
@@ -582,6 +591,7 @@ re_enter:;
   case '@':
   case 'a' ... 'z':
   case 'A' ... 'Z':
+  case 0x80 ... 0xFF: // CP437 identifiers: pi, infinity, theta, micro, ...
     lex->flags |= LEXF_USE_LAST_CHAR;
     for (;;) {
       switch (chr1 = LexAdvChr(lex)) {
@@ -591,6 +601,7 @@ re_enter:;
       case 'a' ... 'z':
       case 'A' ... 'Z':
       case '0' ... '9':
+      case 0x80 ... 0xFF: // CP437 identifiers, see the start case above
         if (idx + 1 >= STR_LEN) {
           LexErr(lex, "Name is too long.");
           return lex->cur_tok = ERR;
@@ -763,6 +774,21 @@ re_enter:;
             dir = __TINKWANIOS_StrDup(buf, NULL);
             *strrchr(dir, '/') = 0;
             f = fopen(buf, "rb");
+            // Fall back to the process cwd (the repo root) when the include
+            // does not resolve against the including file's directory. Src/
+            // used to be flat, so dir-relative was the only spelling needed;
+            // now that the tree mirrors TinkerOS's Adam/Compiler/Kernel
+            // layout, an aggregator like Adam/DolDoc/MakeDoc.HC spells its
+            // includes from the root ("Adam/DolDoc/DocExt.HC") so that the
+            // *runtime* compiler -- which resolves against the cwd, not
+            // against the including file -- reads the same line the same way.
+            // Dir-relative still wins when it resolves, so nothing that
+            // worked before changes.
+            if (!f) {
+              A_FREE(dir);
+              dir = NULL;
+              goto normal;
+            }
           } else
             goto normal;
         } else {

@@ -1749,6 +1749,7 @@ static void BootTinkwanios(char *bootstrap_text) {
     PrsAddSymbol("FBAliasGet", FBAliasGet, 0);
     PrsAddSymbol("FBPitchGet", FBPitchGet, 0);
     PrsAddSymbol("SetWinMgrFlags", SetWinMgrFlags, 1);
+    PrsAddSymbol("SetHostWindowTitle", SetHostWindowTitle, 1);
     PrsAddSymbol("SetVolume", STK_TinkwaniosSetVolume, 1);
     PrsAddSymbol("GetVolume", STK_TinkwaniosGetVolume, 0);
     PrsAddSymbol("__HC_ICAdd_Min_F64", STK___HC_ICAdd_Min_F64, 1);

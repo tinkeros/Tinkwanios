@@ -1,0 +1,72 @@
+// Adapted from ../TinkerOS/Compiler/Compiler.PRJ.  Same job -- AOT-compile
+// the HolyC compiler on its own, which is what Cmp("Compiler") does and what
+// Demo/MultiCore/LoadTest.HC uses as its compile workload -- but the file
+// list is this fork's.  TinkerOS's copy cannot be taken verbatim: 14 of its
+// includes name TempleOS files this tree does not have (Templates, CAsm,
+// UAsm, AsmInit, Asm, PrsExp, OptPass012..789A, BackLib, BackFA/FB/A/B/C),
+// because Tinkwanios replaced the optimiser and back end with
+// Src/TINKWANIOS_CodeGen.HC, Src/OptPass.HC and the per-arch Asm*/UAsm*
+// files.  Kernel/KernelB.HH and KernelC.HH do not exist here either -- this
+// tree folded them into KernelA.HH.
+//
+// The include list below is Src/Compiler.HC's, which is what FULL_PACKAGE.HC
+// builds the live compiler from.  Paths are absolute rather than bare
+// because this tree has no __DIR__ to Cd to: LoadTest.HC compiles with the
+// cwd at ::/Compiler, Cmp elsewhere runs from the repo root, and an absolute
+// path reads the same from both.
+//
+// Deliberately absent, unlike Src/Compiler.HC: the CmpLoadDefines /
+// CmpFillTables / CMiscInit calls.  Those initialise the *running* system's
+// compiler; as top-level statements in an AOT image they would re-run at
+// load time and stomp the live tables.  TinkerOS's PRJ has no such calls.
+// The build injects a handful of defines ahead of the sources -- see
+// c/main.c's BOOTSTRAP_FMT for stage 1 and FULL_PACKAGE.HC's STAGE1 body for
+// stage 2 -- and they are not in KernelA.HH, so a standalone compile has to
+// restate them.  It cannot inherit them from the running system either:
+// CmpJoin gives an AOT compile a fresh hash-table context, which is what
+// keeps an AOT image independent of whatever the live task happens to have
+// defined.  Probed: #ifdef TARGET_X86 is false inside a Cmp'd unit even
+// though InitSymbols defined it at boot.
+#define IMPORT_TINKWANIOS_SYMS 1
+#define TEXT_MODE 0
+#exe {
+  // Pick the target from the running system rather than hard-coding x86, so
+  // this file stays correct on the AArch64 and RISC-V builds.  #exe runs JIT
+  // in the calling task, so it can still see the boot-time defines.
+  if (HashFind("TARGET_X86",      Fs->hash_table,-1)) StreamPrint("#define TARGET_X86 1\n");
+  if (HashFind("TARGET_AARCH64",  Fs->hash_table,-1)) StreamPrint("#define TARGET_AARCH64 1\n");
+  if (HashFind("TARGET_RISCV",    Fs->hash_table,-1)) StreamPrint("#define TARGET_RISCV 1\n");
+  if (HashFind("TARGET_BYTECODE", Fs->hash_table,-1)) StreamPrint("#define TARGET_BYTECODE 1\n");
+  // CMain.HC and KDbg.HC test HOST_ABI=='OpenBSD'. InitSymbols publishes it
+  // at boot beside the TARGET_* defines, for exactly this.
+  StreamPrint("#define HOST_ABI %d\n",HOST_ABI);
+  Option(OPTf_WARN_PAREN,ON);
+  Option(OPTf_WARN_DUP_TYPES,ON);
+  Option(OPTf_KEEP_PRIVATE,ON);
+}
+#include "/Kernel/KernelA.HH"
+#include "/Compiler/CompilerA.HH"
+#exe {Option(OPTf_KEEP_PRIVATE,OFF);};
+// TinkerOS brackets KernelB.HH and KernelC.HH here with
+// Option(OPTf_EXTERNS_TO_IMPORTS,ON/OFF).  Both headers are folded into
+// KernelA.HH in this tree, so there is nothing between the two calls and the
+// pair is left out rather than kept as a no-op.
+#include "/Compiler/CExts.HC"
+#include "/Compiler/CompilerB.HH"
+#include "/Compiler/QSort.HC"
+CCmpGlbls	cmp;
+#include "/Compiler/CHash.HC"
+#include "/Compiler/OptLib.HC"
+#include "/Compiler/CInit.HC"
+#include "/Compiler/AsmLib.HC"
+#include "/Compiler/CExcept.HC"
+#include "/Compiler/LexLib.HC"
+#include "/Compiler/Lex.HC"
+#include "/Compiler/PrsLib.HC"
+#include "/Compiler/PrsVar.HC"
+#include "/Compiler/CMisc.HC"
+#include "/Compiler/TINKWANIOS_PrsExp.HC"
+#include "/Src/TINKWANIOS_CodeGen.HC"
+#include "/Compiler/PrsStmt.HC"
+#include "/Compiler/AsmResolve.HC"
+#include "/Compiler/CMain.HC"

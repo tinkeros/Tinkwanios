@@ -1,0 +1,6 @@
+#help_index "God"
+#help_file "::/Doc/God"
+#include "Adam/God/GodBible"
+#include "Adam/God/HolySpirit"
+#include "Adam/God/GodSong"
+#include "Adam/God/GodDoodle"

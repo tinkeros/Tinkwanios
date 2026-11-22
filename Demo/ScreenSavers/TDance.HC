@@ -14,6 +14,7 @@ U0 TerryDanceTask(U8 *data)
   height=(*imgbuf++)<<8 | *imgbuf++;
   num_imgs=(*imgbuf++)<<8 | *imgbuf++;
   CDC *tdance=DCNew(width, height);
+  CDC *back=DCNew(GR_WIDTH,GR_HEIGHT); //off-screen frame, copied to dc in one go
   i=0;
   while(TRUE)
   {
@@ -40,11 +41,26 @@ U0 TerryDanceTask(U8 *data)
       ydir=1;
     }
     i=i%num_imgs;
-    MemCpy(dc->body,gr.dc2->body,GR_WIDTH*GR_HEIGHT);
+    MemCpy(back->body,gr.dc2->body,GR_WIDTH*GR_HEIGHT);
     MemSetU8(tdance->body,0xff,tdance->width_internal*height);
     for (j=0; j<height; j++)
       MemCpy(tdance->body+j*tdance->width_internal,imgbuf+i*width*height+j*width,width);
-    GrBlot(dc,x,y,tdance);
+
+// Uncomment to make Terry "Blink"
+/*
+    tdance->color=WHITE;
+    if (Blink)
+    {
+      tdance->color=ROP_HV_SWAP+HV_SWAP_ALL;
+      GrRect(tdance,0,0,width,height);
+    }
+*/
+
+// Uncomment to make a Terry shawdow hue shift screen area he covers
+//    back->color=ROP_HV_SWAP+HV_SWAP_ALL;
+
+    GrBlot(back,x,y,tdance);
+    MemCpy(dc->body,back->body,GR_WIDTH*GR_HEIGHT);
     i++;
     Sleep(20);
   }

@@ -1,5 +1,5 @@
 /**
- * Tinkwanios has 256 palette entries (Src/PalGen.HC), 0..229 real and 0xFF
+ * Tinkwanios has 256 palette entries (Adam/Gr/PalGen.HC), 0..229 real and 0xFF
  * TRANSPARENT, so each Doom color takes the nearest one and is drawn solid.
  * This used to dither two of the 16 CGA colors 2x2 to fake the rest.
  *

@@ -155,7 +155,10 @@ You can use the `--tui` to run a DolDoc enviroment in the terminal. ***Use `Exit
   
   It works by appending an HCRT2.BIN and RamDisk at the end of the executable. SDL on windows is statically linked by default.
   
-  You will need to include the `Src` and `Doc`(For `/Doc/StandBy.DD` and friends.)  directories in your Tinkwanios packages.
+  You will need to include the HolyC sources -- `Src`, `Adam`, `Compiler` and
+  `Kernel` -- and `Doc`(For `/Doc/StandBy.DD` and friends.)  directories in your Tinkwanios packages.
+  The sources used to be one flat `Src`; they are split across the four now so
+  that the layout matches TinkerOS's.
   
   Do something like this:
 
@@ -164,6 +167,9 @@ DelTree("Root");
 DirMk("Root");
 CopyTree("Doc","Root/Doc");
 CopyTree("Src","Root/Src");
+CopyTree("Adam","Root/Adam");
+CopyTree("Compiler","Root/Compiler");
+CopyTree("Kernel","Root/Kernel");
 TinkwaniosPack("a2.exe","Beep;\n","Root");
 ```
 

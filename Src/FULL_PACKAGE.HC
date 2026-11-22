@@ -1,11 +1,11 @@
-#include "KernelA.HH"
+#include "Kernel/KernelA.HH"
 #ifdef BOOTSTRAP
 #define mp_cnt 1
 #endif
-#include "CompilerA.HH"
-#include "CExts.HC"
-#include "CompilerB.HH"
-#include "KGlbls.HC"
+#include "Compiler/CompilerA.HH"
+#include "Compiler/CExts.HC"
+#include "Compiler/CompilerB.HH"
+#include "Kernel/KGlbls.HC"
 //Must precede every use of GR_WIDTH/GR_HEIGHT, KMain.HC's text layer first.
 gr_width=GrWidthGet;
 gr_height=GrHeightGet;
@@ -14,7 +14,7 @@ gr_height_scale=GrHeightScaleGet;
 gr_do_scaling=GrDoScalingGet;
 fb_width=FBWidthGet;
 fb_height=FBHeightGet;
-#include "KMisc.HC"
+#include "Kernel/KMisc.HC"
 
 CCPU cpu_structs[64];
 SetGs(&cpu_structs[0]);
@@ -151,57 +151,57 @@ U0 SwapI64(I64 *a,I64 *b) {
   *a=*b;
   *b=tmp;
 }
-#include "CQue.HC"
-#include "KDate.HC"
-#include "StrA.HC"
-#include "KHashA.HC"
-#include "KMath.HC"
-#include "KMathB.HC"
-#include "StrPrint.HC"
-#include "StrA.HC"
-#include "Sched.HC"
-#include "Display.HC"
-#include "KHashB.HC"
-#include "KTask.HC"
-#include "MultiProc.HC"
-#include "KExcept.HC"
-#include "Job.HC"
-#include "KDataTypes.HC"
-#include "Compress.HC"
-#include "StrB.HC"
-#include "KDefine.HC"
-#include "StrScan.HC"
-#include "QSort.HC"
-#include "MakeBlkDev.HC"
+#include "Src/CQue.HC"
+#include "Kernel/KDate.HC"
+#include "Kernel/StrA.HC"
+#include "Kernel/KHashA.HC"
+#include "Src/KMath.HC"
+#include "Kernel/KMathB.HC"
+#include "Kernel/StrPrint.HC"
+#include "Kernel/StrA.HC"
+#include "Kernel/Sched.HC"
+#include "Kernel/Display.HC"
+#include "Kernel/KHashB.HC"
+#include "Kernel/KTask.HC"
+#include "Kernel/MultiProc.HC"
+#include "Kernel/KExcept.HC"
+#include "Kernel/Job.HC"
+#include "Kernel/KDataTypes.HC"
+#include "Kernel/Compress.HC"
+#include "Kernel/StrB.HC"
+#include "Kernel/KDefine.HC"
+#include "Kernel/StrScan.HC"
+#include "Compiler/QSort.HC"
+#include "Kernel/BlkDev/MakeBlkDev.HC"
 adam_task=tinkwanios_boot_task;
 SetFs(adam_task);
 TaskInit(adam_task,0);
-#include "KEnd.HC"
-#include "FontStd.HC"
-#include "FontCyrillic.HC"
-#include "KLoadARM.HC"
-#include "FunSeg.HC"
-#include "Compiler.HC"
-#include "KeyDev.HC"
-#include "Keyboard.HC"
-#include "Message.HC"
-#include "Mouse.HC"
-#include "EdLite.HC"
-#include "Profiler.HC"
+#include "Src/KEnd.HC"
+#include "Kernel/FontStd.HC"
+#include "Kernel/FontCyrillic.HC"
+#include "Kernel/KLoadARM.HC"
+#include "Kernel/FunSeg.HC"
+#include "Src/Compiler.HC"
+#include "Kernel/KeyDev.HC"
+#include "Kernel/SerialDev/Keyboard.HC"
+#include "Kernel/SerialDev/Message.HC"
+#include "Kernel/SerialDev/Mouse.HC"
+#include "Kernel/EdLite.HC"
+#include "Adam/Opt/Utils/Profiler.HC"
 #ifdef TARGET_X86
-#include "UAsmX64.HC"
-#include "AsmX64.HC"
+#include "Src/UAsmX64.HC"
+#include "Compiler/AsmX64.HC"
 #endif
 #ifdef TARGET_RISCV
-#include "UAsmRiscV.HC"
-#include "AsmRISCV.HC"
+#include "Src/UAsmRiscV.HC"
+#include "Compiler/AsmRISCV.HC"
 #endif
-#include "KUtils.HC"
-#include "KMain.HC"
+#include "Kernel/KUtils.HC"
+#include "Kernel/KMain.HC"
 //IMPORTANT:DO NOT CHANGE ORDER OF KMAIN WITH ARM
 #ifdef TARGET_AARCH64
-#include "UAsmARM64.HC"
-#include "AsmARM64.HC"
+#include "Src/UAsmARM64.HC"
+#include "Compiler/AsmARM64.HC"
 #endif
 
 U0 SCRoutine() {
@@ -210,6 +210,16 @@ U0 SCRoutine() {
   SetFs(self);
   TaskInit(Fs,0);
   Fs->task_signature=TASK_SIGNATURE_VAL;
+//Chain this core's Seth task onto Adam, the way core 0's already is --
+//InitCPUs sets cpu_structs[0].seth_task=adam_task outright. Spawn() parents a
+//task to Gs->seth_task when no parent is given, and a task can only compile
+//what its parent's hash table chain reaches (see Spawn's "NULL means adam"
+//comment, and KTask.HC's hash_table->next line). Without this an AP core's
+//tasks reached nothing: Demo/MultiCore/LoadTest.HC's Spawn(&Job1,,,1) could
+//not resolve Cmp, HashFind or StreamPrint, so its compile workload failed
+//instantly and silently under its own Silent;.
+  Fs->parent_task=adam_task;
+  Fs->hash_table->next=adam_task->hash_table;
   Gs->seth_task=Fs;
   LBts(&(Gs->ready),0);
   CoreAPSethTask;
@@ -248,13 +258,13 @@ SetFs(Gs->seth_task);
 //Embed them so the user cant mess it up
 U8 *KernelAHH;
 //Seperate to avoid weird bug with running #exe block twice
-KernelAHH=(#exe {ExeEmbedFile("/Src/KernelA.HH");});;
+KernelAHH=(#exe {ExeEmbedFile("/Kernel/KernelA.HH");});;
 //Gr.HH too, for CSprite. The compiler consumes it while building this
 //binary, so without replaying it the class exists in the compiled code but
 //not in the runtime hash table, and user code gets the forward declaration
 //in KernelA.HH -- which has no members. See InitSymbols below.
 U8 *GrHH;
-GrHH=(#exe {ExeEmbedFile("/Src/Gr.HH");});;
+GrHH=(#exe {ExeEmbedFile("/Adam/Gr/Gr.HH");});;
 #endif
 #endif
 //For use later(ABOVE)
@@ -322,19 +332,27 @@ U0 InitSymbols() {
 #ifdef TARGET_RISCV
   ExePrint("#define TARGET_RISCV\n;");
 #endif
+//HOST_ABI alongside the targets, so runtime-compiled code can see which host
+//ABI this binary was built for. It is a build-time define (c/main.c's
+//BOOTSTRAP_FMT, and the STAGE1 body below) and was reachable nowhere else at
+//runtime, so a standalone compile of CMain.HC or KDbg.HC -- both of which
+//test HOST_ABI=='OpenBSD' -- could not be made to work. That is what
+//Compiler/Compiler.PRJ needs. Emitted as the integer the multi-character
+//constant already is, so HOST_ABI=='OpenBSD' still compares correctly.
+  ExePrint("#define HOST_ABI %d\n;",HOST_ABI);
 #ifdef STAGE1
-  ExePutS(KernelAHH,"/Src/KernelA.HH");
+  ExePutS(KernelAHH,"/Kernel/KernelA.HH");
 //After KernelA.HH: Gr.HH's 19 sprite/mesh classes are also declared there
 //and redeclaring them identically is a no-op, while CSprite -- which only
 //Gr.HH has in full -- becomes resolvable to user code. Gr.HH is pure class
 //and #define text with no executable statement and no reference to 'gr',
 //so it is safe this early, unlike a default argument of gr.dc.
-  ExePutS(GrHH,"/Src/Gr.HH");
+  ExePutS(GrHH,"/Adam/Gr/Gr.HH");
   ImportSymbolsToHolyC(&ImportSymbolsCB);
   if(FileFind("/HCRT2.DBG.Z")) DbgInfoRead("/HCRT2.DBG.Z");
 #else
 //BOOTSTRAP is defined
-  ExeFile("T:/Src/KernelA.HH");
+  ExeFile("T:/Kernel/KernelA.HH");
   ImportSymbolsToHolyC(&ImportSymbolsCB);
 #endif
   #ifdef GEN_HEADERS
@@ -345,7 +363,13 @@ U0 InitSymbols() {
 InitSymbols;
 
 #ifdef BOOTSTRAP
-Cd("Src");
+//Stage 2 compiles with the cwd left at the repo root, not at Src. The HolyC
+//compiler resolves #include against the cwd while the C bootstrap in c/lex.c
+//resolves it against the including file's directory; spelling every include
+//from the root ("Kernel/KGlbls.HC", "Adam/DolDoc/DocExt.HC") is the one
+//spelling both agree on now that the tree mirrors TinkerOS's layout. c/lex.c
+//falls back to the cwd for the nested aggregators, whose own directory is not
+//the root. Cd("Src") here would break every root-relative include below.
 U8 *body=
 	MStrPrint("#define IMPORT_TINKWANIOS_SYMS 1\n"
 	"#define TEXT_MODE 0\n"
@@ -363,59 +387,61 @@ U8 *body=
 	#endif
 	"#define HOST_ABI '%c'\n"
 	"#define STAGE1 1\n"
-	"#include \"HCRT_TOS.HC\";;\n",
+	"#include \"Src/HCRT_TOS.HC\";;\n",
 	HOST_ABI
 );
 //Put this in a scope to do this all at once
 {
-	FileWrite("STAGE1.HC",body,StrLen(body));
-	Cmp("STAGE1.HC","../HCRT2.DBG.Z","../HCRT2.BIN");
+	FileWrite("Src/STAGE1.HC",body,StrLen(body));
+	Cmp("Src/STAGE1.HC","HCRT2.DBG.Z","HCRT2.BIN");
 	ExitTinkwanios;
 }
 #endif
 #ifdef COMPONET_GR
-#include "ADskA.HC"
-#include "ADskB.HC"
-#include "MakeGr.HC"
-#include "Menu.HC"
-#include "Win.HC"
-#include "WinMgr.HC"
-#include "GodExt.HC"
-#include "MakeDoc.HC"
-#include "GrMisc.HC"
-#include "Training.HC"
-#include "MakeAC.HC"
-#include "Mount.HC"
-#include "MakeGod.HC"
-#include "ASnd.HC"
-#include "TaskSettings.HC"
-#include "MakeCtrls.HC"
-#include "Utils.HC"
-#include "FileMgr.HC"
-#include "KDbg.HC"
-#include "ADbg.HC"
-#include "ARegistry.HC"
-#include "CHash.HC"
-#include "AHash.HC"
-#include "AMath.HC"
-#include "AMathODE.HC" 
-#include "InFile.HC" 
-#include "TaskRep.HC"
-#include "Diff.HC" 
-#include "Merge.HC" 
-#include "DocUtils.HC" 
-#include "MakeISOFile.HC"
-#include "LineRep.HC"
-#include "LinkChk.HC"
-#include "StrUtils.HC"
-#include "Reports.HC"
-#include "GrPaint.HC"
+#include "Kernel/ABlkDev/ADskA.HC"
+#include "Kernel/ABlkDev/ADskB.HC"
+#include "Adam/Gr/MakeGr.HC"
+#include "Adam/Menu.HC"
+#include "Adam/Win.HC"
+#include "Adam/WinMgr.HC"
+#include "Adam/God/GodExt.HC"
+#include "Adam/DolDoc/MakeDoc.HC"
+#include "Adam/Gr/GrMisc.HC"
+#include "Adam/Training.HC"
+#include "Adam/AutoComplete/MakeAC.HC"
+#include "Kernel/ABlkDev/Mount.HC"
+#include "Adam/God/MakeGod.HC"
+#include "Adam/Snd/ASnd.HC"
+#include "Adam/TaskSettings.HC"
+#include "Adam/Ctrls/MakeCtrls.HC"
+#include "Adam/Utils.HC"
+#include "Adam/ABlkDev/FileMgr.HC"
+#include "Kernel/KDbg.HC"
+#include "Adam/ADbg.HC"
+#include "Adam/ARegistry.HC"
+#include "Compiler/CHash.HC"
+#include "Adam/AHash.HC"
+#include "Adam/AMath.HC"
+#include "Adam/AMathODE.HC" 
+#include "Adam/InFile.HC" 
+#include "Adam/Opt/Utils/AdamLite.HC"
+#include "Adam/TaskRep.HC"
+#include "Adam/Opt/Utils/Diff.HC" 
+#include "Adam/Opt/Utils/Merge.HC" 
+#include "Adam/Opt/Utils/DocUtils.HC" 
+#include "Adam/Opt/Boot/MakeISOFile.HC"
+#include "Adam/Opt/Utils/LineRep.HC"
+#include "Adam/Opt/Utils/LinkChk.HC"
+#include "Adam/Opt/Utils/FileBMP.HC"
+#include "Adam/Opt/Utils/StrUtils.HC"
+#include "Adam/Opt/Utils/Reports.HC"
+#include "Adam/Gr/GrPaint.HC"
 if(!IsCmdLineMode&&!IsCmdLineMode2)
   DrawWindowNew;
 text.fb_alias=FBAliasGet;
 sys_vbe_mode_pitch=FBPitchGet; //Only valid once DrawWindowNew has made the surface.
 #ifdef GEN_HEADERS
-#include "GenHeader.HC";;
+#include "Src/GenHeader.HC";;
 #endif
 Gs->seth_task=adam_task;
 if(IsCmdLineMode2)
@@ -472,7 +498,7 @@ U0 CmdLine(I64) {
 //
   Spawn(&UserCmdLine)->task_end_cb=&Exit0;
 }
-#include "TinkwaniosPack.HC";
+#include "Src/TinkwaniosPack.HC";
 TinkwaniosPackLoad; //Does nothing if not tinkwanios-packed
 //Compiled at runtime, not #included: stage 1 is the C compiler in c/ and
 //it has no "asm" keyword, so an asm block anywhere in the AOT build dies
@@ -501,18 +527,38 @@ if(IsCmdLineMode) {
   WinMax(boot_user_task);
 }
 if(!IsCmdLineMode) {
-  ExePrint2("#include \"~:/Src/WallPaper.HC\";WallPaperInit;;");
-  ExePrint2("#include \"~:/Src/AMouse.HC\";");
+  ExePrint2("#include \"~:/Adam/WallPaper.HC\";WallPaperInit;;");
+  ExePrint2("#include \"~:/Adam/AMouse.HC\";");
   if (_SixtyFPS)
     SetFPS(60.);
 
+//The OS source is spread over four directories now (Adam, Compiler, Kernel
+//and what is left of Src), and a FilesFind mask descends from one root only.
+//ACInit resets the hash table, so only the first call can be ACInit; the rest
+//add to it directly, under the same ACf_INIT_IN_PROGRESS bit ACInit takes --
+//AutoComplete's own task waits on it (ACTask.HC) and is already ON by then.
 #ifndef TARGET_BYTECODE
-  ACInit("~:/Src/*.HC*;*.HH*");
+  ACInit("~:/Kernel/*.HC*;*.HH*");
+  while (LBts(&ac.flags,ACf_INIT_IN_PROGRESS))
+    Yield;
+  ACMainFileLstTraverse("~:/Adam/*.HC*;*.HH*");
+  ACMainFileLstTraverse("~:/Compiler/*.HC*;*.HH*");
+  ACMainFileLstTraverse("~:/Src/*.HC*;*.HH*");
+  LBtr(&ac.flags,ACf_INIT_IN_PROGRESS);
 #endif
 #ifdef TARGET_BYTECODE
-  ACInit("~:/Src/Kernel*.HH*;*.HH*");
+  ACInit("~:/Kernel/*.HH*;*.HH*");
+  while (LBts(&ac.flags,ACf_INIT_IN_PROGRESS))
+    Yield;
+  ACMainFileLstTraverse("~:/Compiler/*.HH*;*.HH*");
+  LBtr(&ac.flags,ACf_INIT_IN_PROGRESS);
 #endif
+//Record executed command lines for AutoComplete's history view (SHIFT-F8).
+  EnableHistory;
   OnceExe;
+  if(FileFind("~/MakeHome.HC"))
+    try ExeFile("~/MakeHome.HC");
+    catch PutExcept;
   if(FileFind("~/HomeKeyPlugIns.HC"))
     ExeFile("~/HomeKeyPlugIns.HC");
 //Last, so a demo or doc from the command line starts in a finished desktop.

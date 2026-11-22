@@ -65,7 +65,7 @@ tx=x*2; //*2 for dithered pixel
 Each of the 256 `PLAYPAL` colors is mapped to the nearest Tinkwanios palette
 entry by `U8 *MapPalette(CRGB *data)` in [DoomGr.HC](DoomGr.HC) and drawn
 solid. Tinkwanios has 256 palette entries (the 16 CGA colors plus the
-web-safe cube, see `Src/PalGen.HC`), of which freedoom1's palette reaches 70.
+web-safe cube, see `Adam/Gr/PalGen.HC`), of which freedoom1's palette reaches 70.
 
 This used to pick the two closest of the 16 CGA colors and dither them across
 the 2x2 block to fake the rest; the `*2` naming is left over from that.

@@ -155,27 +155,27 @@ Bool MyPutKey(I64 ch,I64 sc)
 	//Ins your own ALT-key plug-ins
       case '1':
 	if (sc&SCF_KEY_DESC)
-	  KeyDescSet("Dol/ï¿½");
+	  KeyDescSet("Dol/ã");
 	else
-	  'ï¿½';
+	  'ã';
 	return TRUE;
       case '2':
 	if (sc&SCF_KEY_DESC)
-	  KeyDescSet("Dol/ï¿½");
+	  KeyDescSet("Dol/é");
 	else
-	  'ï¿½';
+	  'é';
 	return TRUE;
       case '3':
 	if (sc&SCF_KEY_DESC)
-	  KeyDescSet("Dol/ï¿½");
+	  KeyDescSet("Dol/è");
 	else
-	  'ï¿½';
+	  'è';
 	return TRUE;
       case '4':
 	if (sc&SCF_KEY_DESC)
-	  KeyDescSet("Dol/ï¿½");
+	  KeyDescSet("Dol/ê");
 	else
-	  'ï¿½';
+	  'ê';
 	return TRUE;
       case '9':
 	if (sc&SCF_KEY_DESC)

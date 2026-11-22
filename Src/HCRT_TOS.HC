@@ -1,3 +1,3 @@
 #define IMPORT_TINKWANIOS_SYMS 1
 #define COMPONET_GR 1
-#include "FULL_PACKAGE.HC";;
+#include "Src/FULL_PACKAGE.HC";;

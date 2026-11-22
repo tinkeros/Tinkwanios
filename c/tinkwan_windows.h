@@ -29,3 +29,4 @@ int64_t FBHeightGet(int64_t *stk);
 int64_t FBAliasGet(int64_t *stk);
 int64_t FBPitchGet(int64_t *stk);
 int64_t SetWinMgrFlags(int64_t *stk);
+int64_t SetHostWindowTitle(int64_t *stk);

@@ -29,9 +29,9 @@ U0 TS(U8 *desc)
   Free(st);
   progress4=ts_i++;
 #ifdef UEFI_BOOT
-  progress4_max=199;
+  progress4_max=202;
 #else
-  progress4_max=203;
+  progress4_max=206;
 #endif
   progress4_t0=ts_t0;
   *progress4_desc=0;
@@ -384,6 +384,24 @@ U0 DoTDScreenSaver()
   {
     task=User;
     AdamFile("/Demo/ScreenSavers/TDance.HC.Z");
+    SetScreenSaverTimeout(1);
+    Sleep(10000);
+    AdamFile("/Demo/ScreenSavers/Default.HC.Z");
+    PostMsgWait(task,MSG_KEY_DOWN_UP,CH_ESC,0);
+    SetScreenSaverTimeout(0);
+    ms_hard.timestamp = GetTSC;
+    Sleep(1);
+    Kill(task);
+  }
+}
+
+U0 DoSDScreenSaver()
+{
+  CTask *task;
+  if (IsFileZorNotZ("/Demo/ScreenSavers/ShadowDance.HC.Z"))
+  {
+    task=User;
+    AdamFile("/Demo/ScreenSavers/ShadowDance.HC.Z");
     SetScreenSaverTimeout(1);
     Sleep(10000);
     AdamFile("/Demo/ScreenSavers/Default.HC.Z");
@@ -1128,6 +1146,24 @@ U0 DoPersonalMenu()
   Sleep(500);
   XTalkWait(task,"DocDel(m);\n");
   Sleep(200);
+  PostMsgWait(task,MSG_KEY_DOWN_UP,CH_SHIFT_ESC,0);
+  DeathWait(&task,TRUE);
+}
+
+
+U0 DoTOSTheme()
+{//Not time limited.  Runs the whole song, then exits.
+  CTask *task=User;
+  XTalkWait(task,"#include \"::/Demo/TOSTheme\";\n");
+  DeathWait(&task,TRUE);
+}
+
+
+U0 DoPalSort()
+{
+  CTask *task=User;
+  XTalkWait(task,"#include \"::/Demo/Graphics/TinkerOS/PalSort\";\n");
+  Sleep(3000);
   PostMsgWait(task,MSG_KEY_DOWN_UP,CH_SHIFT_ESC,0);
   DeathWait(&task,TRUE);
 }
@@ -2017,6 +2053,10 @@ U0 OSTestSuite()
   ts_i=0;
   TS("PersonalMenu");
   DoPersonalMenu;
+  TS("TOSTheme");
+  DoTOSTheme;
+  TS("PalSort");
+  DoPalSort;
   TS("HexPrism");
   DoHexPrism;
   TS("Life");
@@ -2043,6 +2083,8 @@ U0 OSTestSuite()
   DoLSScreenSaver;
   TS("NewGlassScreenSaver");
   DoNGScreenSaver;
+  TS("ShadowDanceScreenSaver");
+  DoSDScreenSaver;
   TS("TerryDanceScreenSaver");
   DoTDScreenSaver;
   TS("ToastScreenSaver");
@@ -2142,7 +2184,9 @@ U0 OSTestSuite()
   TS("Lock");
   if (mp_cnt>1) TSFile("::/Demo/MultiCore/Lock");
   TS("Interrupts");
+#ifndef TINKWANIOS //Wants an IDT and a local APIC
   if (mp_cnt>1) TSFile("::/Demo/MultiCore/Interrupts");
+#endif
   TS("SpritePlot");
   TSFileChar("::/Demo/Graphics/SpritePlot");
   TS("Elephants");
@@ -2164,7 +2208,9 @@ U0 OSTestSuite()
   TS("Balloon");
   TSFile("::/Demo/Graphics/Balloon",0);
   TS("Carry");
+#ifndef TINKWANIOS //Wants the Carry intrinsic
   TSFile("::/Demo/Carry");
+#endif
   TS("Directives");
   TSFile("::/Demo/Directives");
   TS("Bitfield");
@@ -2274,7 +2320,9 @@ U0 OSTestSuite()
   TS("CursorMove");
   TSFile("::/Demo/DolDoc/CursorMove");
   TS("MiniCompiler");
+#ifdef TARGET_X86
   DoMiniCompiler;
+#endif
   TS("MiniGrLib");
   TSFile("::/Demo/Lectures/MiniGrLib",0);
   TS("TimeIns");
@@ -2371,27 +2419,47 @@ U0 OSTestSuite()
   TS("WordSearch");
   TSFileChar("::/Demo/WordSearch");
   TS("StkGrow");
+#ifndef TINKWANIOS //Wants CallStkGrow
   TSFile("::/Demo/StkGrow");
+#endif
   TS("MemDemo");
   TSFile("::/Demo/MemDemo");
   TS("WaterFowl");
   TSFileChar("::/Demo/Snd/WaterFowl");
   TS("AsmHelloWorld");
+#ifdef TARGET_X86
   TSFile("::/Demo/Asm/AsmHelloWorld");
+#endif
   TS("AsmAndC1");
+#ifdef TARGET_X86
   DoAsmAndC1;
+#endif
   TS("AsmAndC2");
+#ifdef TARGET_X86
+#ifndef TINKWANIOS //RIP-relative global out of range there
   DoAsmAndC2;
+#endif
+#endif
   TS("AsmAndC3");
+#ifdef TARGET_X86
   TSFile("::/Demo/Asm/AsmAndC3");
+#endif
   TS("MulByHand");
+#ifdef TARGET_X86
   TSFile("::/Demo/Asm/MulByHand");
+#endif
   TS("DivByHand");
+#ifdef TARGET_X86
   TSFile("::/Demo/Asm/DivByHand");
+#endif
   TS("BuzzFizz");
+#ifdef TARGET_X86
   TSFile("::/Demo/Asm/BuzzFizz");
+#endif
   TS("PutDec");
+#ifdef TARGET_X86
   TSFile("::/Demo/Asm/PutDec");
+#endif
   TS("Memory");
   TSFile("::/Demo/Memory",1000);
   TS("FirstSize");
@@ -2439,7 +2507,7 @@ U0 OSTestSuite()
     PostMsgWait(task,MSG_KEY_DOWN_UP,CH_SPACE,0);
   }
   TS("ATARep");
-  XTalkWait(task,"ATARep;\npSleep(750);\n");
+  XTalkWait(task,"ATARep;\nSleep(750);\n");
 #endif
   TS("HashDepthRep");
   XTalkWait(task,
